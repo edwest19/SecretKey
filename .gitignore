@@ -197,7 +197,6 @@ AutoTest.Net/
 [Ee]xpress/
 
 # DocProject is a documentation generator add-in
-DocProject/buildhelp/
 DocProject/Help/*.HxT
 DocProject/Help/*.HxC
 DocProject/Help/*.hhc
@@ -398,6 +397,9 @@ MSBuild_Logs/
 # BeatPulse healthcheck temp database
 healthchecksdb
 
+# Ignore project config
+config.json
+
 # Backup folder for Package Reference Convert tool in Visual Studio 2017
 MigrationBackup/
 
@@ -427,3 +429,27 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+=======
+# Visual Studio / .NET
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+
+# Build outputs
+publish/
+
+# Rider
+.idea/
+
+# NuGet
+*.nupkg
+
+# Logs
+*.log
+
+# Project config
+config.json
+>>>>>>> d37cb99 (Add .gitignore and config example; ignore config.json)
