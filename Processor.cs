@@ -1,3 +1,5 @@
+// AI Assistant Acknowledgement: This file was created or modified with assistance from an AI programming assistant named "GitHub Copilot".
+// Review generated code before use and treat any embedded secrets appropriately.
 using System;
 using System.Collections.Generic;
 using System.IO;
