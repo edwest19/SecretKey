@@ -64,5 +64,9 @@ Contributing
 - Fork, create a feature branch, and open a pull request. If you want help adding unit tests or CI, I can add a starter workflow.
 
 License
-- Add a LICENSE file as needed for your project.
+- Consider adding a LICENSE file as needed for your project.
+
+AI Assistant Acknowledgement
+----------------------------
+This README and parts of the project were generated or modified with assistance from an AI programming assistant named "GitHub Copilot". The assistant helped implement the deterministic password generation logic, configuration handling, and repository setup tasks. Review all generated code and configuration before use.
 
