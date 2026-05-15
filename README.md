@@ -22,14 +22,13 @@ Quick start
 CSV format
 - The input CSV must include a header row. Expected columns (in order):
   1) Title
-  2) Website
+  2) URL (or Website)
   3) Username
-  4) Password Regex
 
 - Example input.csv row:
 
-  Title,Website,Username,Password Regex
-  "Verizon","https://verizon.com","edwest@jask.com","^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{12,}$"
+  Title,URL,Username
+  "Verizon","https://verizon.com","edwest@jask.com"
 
 - The app appends a Password column to each row and writes the result to OutputPath.
 
@@ -50,7 +49,8 @@ Configuration tips
 - The code currently ignores config.json via .gitignore; keep a local copy with your real RootKey and use the example for public docs.
 
 Extensibility
-- Password length and alphabet can be changed in Crypto.HashToPassword and Processor.Process.
+- Password mask and length are configurable via config.json. The mapping consumes HMAC bytes sequentially and deterministically maps them to character pools.
+- The CSV parser is intentionally simple; replace with a robust CSV library (CsvHelper) if you need full CSV dialect support.
 - The CSV parser is intentionally simple; replace with a robust CSV library (CsvHelper) if you need full CSV dialect support.
 
 Development
