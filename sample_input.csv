@@ -1,0 +1,7 @@
+Title,URL,Username,Regex
+hulu.com,https://secure.hulu.com/,user@sample.com,^[A-Z][a-z]{4}[0-9][^A-Za-z0-9][a-z]{3}[0-9]{2}$
+Dickssportinggoods,https://www.dickssportinggoods.com/,user@sample.com,^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{20}$
+Sendinc,https://www.sendinc.com/,user@sample.com,^[A-Z][a-z]{4}[0-9][^A-Za-z0-9][a-z]{3}[0-9]{2}$
+Snapchat,snapchat.com,user@sample.com,^[A-Z][a-z]{4}[0-9][^A-Za-z0-9][a-z]{3}[0-9]{2}$
+Smart321,smart321.com,user@sample.com,^[A-Z][a-z]{4}[0-9][^A-Za-z0-9][a-z]{3}[0-9]{2}$
+Chess,https://www.chess.com,user@sample.com,Games
