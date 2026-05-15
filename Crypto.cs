@@ -42,33 +42,49 @@ public static class Crypto
         return sb.ToString();
     }
 
-    // Map a 32-byte HMAC blob deterministically to a 12-character password with mask: XxxxxNSxxxNN
-    // X = uppercase, x = lowercase, N = number, S = special character
-    public static string MapBlobToPattern(byte[] hash)
+    // Map a HMAC blob deterministically to a password using a mask string.
+    // Mask characters:
+    //  X = uppercase, x = lowercase, N = digit, S = special, any other char is used verbatim.
+    // Bytes from hash are consumed sequentially (wrapping if needed) and mapped to pools using modulo.
+    public static string MapBlobToPattern(byte[] hash, string mask)
     {
         if (hash == null) throw new ArgumentNullException(nameof(hash));
-        if (hash.Length < 12) throw new ArgumentException("Hash must be at least 12 bytes", nameof(hash));
+        if (mask == null) throw new ArgumentNullException(nameof(mask));
 
         // Pools
-        char[] upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".ToCharArray();
-        char[] lower = "abcdefghijklmnopqrstuvwxyz".ToCharArray();
-        char[] digits = "0123456789".ToCharArray();
-        char[] special = "!@#$%&*()-_=+[]{}<>?".ToCharArray();
+        ReadOnlySpan<char> upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".AsSpan();
+        ReadOnlySpan<char> lower = "abcdefghijklmnopqrstuvwxyz".AsSpan();
+        ReadOnlySpan<char> digits = "0123456789".AsSpan();
+        ReadOnlySpan<char> special = "!@#$%&*()-_=+[]{}<>?".AsSpan();
 
-        // Explicit mapping for positions 0..11 using sequential bytes from hash
-        char c0 = upper[hash[0] % upper.Length];
-        char c1 = lower[hash[1] % lower.Length];
-        char c2 = lower[hash[2] % lower.Length];
-        char c3 = lower[hash[3] % lower.Length];
-        char c4 = lower[hash[4] % lower.Length];
-        char c5 = digits[hash[5] % digits.Length];
-        char c6 = special[hash[6] % special.Length];
-        char c7 = lower[hash[7] % lower.Length];
-        char c8 = lower[hash[8] % lower.Length];
-        char c9 = lower[hash[9] % lower.Length];
-        char c10 = digits[hash[10] % digits.Length];
-        char c11 = digits[hash[11] % digits.Length];
+        var result = new char[mask.Length];
+        int byteIndex = 0;
+        for (int i = 0; i < mask.Length; i++)
+        {
+            byte b = hash[byteIndex % hash.Length];
+            char m = mask[i];
+            switch (m)
+            {
+                case 'X':
+                    result[i] = upper[b % upper.Length];
+                    break;
+                case 'x':
+                    result[i] = lower[b % lower.Length];
+                    break;
+                case 'N':
+                    result[i] = digits[b % digits.Length];
+                    break;
+                case 'S':
+                    result[i] = special[b % special.Length];
+                    break;
+                default:
+                    // use literal character from mask
+                    result[i] = m;
+                    break;
+            }
+            byteIndex++;
+        }
 
-        return new string(new char[] { c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11 });
+        return new string(result);
     }
 }

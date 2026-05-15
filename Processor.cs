@@ -71,8 +71,9 @@ public static class Processor
             // Initial HMAC
             byte[] hash = Crypto.HmacSha256(monthlyMasterKey, block);
 
-            // Map HMAC directly to structural password: XxxxxNSxxxNN
-            string password = Crypto.MapBlobToPattern(hash);
+            // Map HMAC to password using configured mask and length
+            // Note: mask controls structure; passwordLength is informational when mask contains literals
+            string password = Crypto.MapBlobToPattern(hash, passwordMask);
 
             // Reconstruct output line: keep original raw fields and append password (quoted if needed)
             string outLine = line + "," + QuoteIfNeeded(password);
