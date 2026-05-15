@@ -48,8 +48,8 @@ internal partial class Program
             // Derive Monthly Master Key
             var masterKey = Crypto.DeriveMonthlyMasterKey(config?.RootKey ?? string.Empty, dateCode);
 
-            // Run processor
-            Processor.Process(config?.InputPath ?? string.Empty, config?.OutputPath ?? string.Empty, masterKey);
+            // Run processor with configurable mask/length from config
+            Processor.Process(config?.InputPath ?? string.Empty, config?.OutputPath ?? string.Empty, masterKey, config?.PasswordLength ?? 12, config?.PasswordMask ?? "XxxxxNSxxxNN");
         }
         else
         {
@@ -67,4 +67,6 @@ public class ConfigData
     public string InputPath { get; set; } = string.Empty;
     public string OutputPath { get; set; } = string.Empty;
     public string RootKey { get; set; } = string.Empty;
+    public string PasswordMask { get; set; } = "XxxxxNSxxxNN";
+    public int PasswordLength { get; set; } = 12;
 }

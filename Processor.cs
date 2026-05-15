@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 public static class Processor
 {
     // Process the input CSV and write output CSV (appending Password column)
-    public static void Process(string inputPath, string outputPath, byte[] monthlyMasterKey, int passwordLength = 16)
+    public static void Process(string inputPath, string outputPath, byte[] monthlyMasterKey, int passwordLength = 16, string passwordMask = "XxxxxNSxxxNN")
     {
         if (!File.Exists(inputPath))
         {
