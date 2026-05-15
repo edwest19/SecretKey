@@ -73,11 +73,18 @@ public static class Processor
 
             string password = Crypto.HashToPassword(hash, passwordLength);
 
-            // Compile regex
+            // Compile regex. If no anchors (^ or $) are present, default to full-string match by anchoring the pattern.
             Regex regex;
             try
             {
-                regex = new Regex(passwordRegex);
+                if (string.IsNullOrWhiteSpace(passwordRegex))
+                {
+                    passwordRegex = ".*"; // match anything
+                }
+
+                bool hasAnchor = passwordRegex.Contains("^") || passwordRegex.Contains("$");
+                string pattern = hasAnchor ? passwordRegex : "^" + passwordRegex + "$";
+                regex = new Regex(pattern);
             }
             catch (Exception ex)
             {
@@ -98,6 +105,10 @@ public static class Processor
             if (attempts >= maxAttempts)
             {
                 Console.WriteLine($"Failed to generate password matching regex on row {i + 1} after {maxAttempts} attempts.");
+                Console.WriteLine($"  Title: {title}");
+                Console.WriteLine($"  Username: {username}");
+                Console.WriteLine($"  Regex: {passwordRegex}");
+                Console.WriteLine($"  Last candidate: {password}");
             }
 
             // Reconstruct output line: keep original raw fields and append password (quoted if needed)
