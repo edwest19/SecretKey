@@ -42,6 +42,8 @@ internal partial class Program
             Console.WriteLine("--- Secret Key Configuration ---");
             Console.WriteLine($"Input Path:  {config?.InputPath}");
             Console.WriteLine($"Output Path: {config?.OutputPath}");
+            Console.WriteLine($"Password Mask: {config?.PasswordMask}");
+            Console.WriteLine($"Password Length: {config?.PasswordLength}");
             string rootPreview = string.IsNullOrEmpty(config?.RootKey) ? "(not set)" : (config.RootKey.Length <= 4 ? "****" : config.RootKey.Substring(0, 2) + new string('*', Math.Min(4, config.RootKey.Length - 2)));
             Console.WriteLine($"Root Key:    {rootPreview}");
             Console.WriteLine("--------------------------------");
