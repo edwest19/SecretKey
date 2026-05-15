@@ -61,7 +61,8 @@ public static class Processor
             string website = fields.Count > idxWebsite ? fields[idxWebsite] : string.Empty;
             string username = fields.Count > idxUsername ? fields[idxUsername] : string.Empty;
 
-            // Create deterministic 32-byte block from Title+Website+Username
+            // Normalize URL to protocol + domain, then create deterministic 32-byte block from Title+Website+Username
+            website = CleanUrl(website);
             byte[] block = CreateFixedBlock(title, website, username);
 
             // Initial HMAC
@@ -75,6 +76,35 @@ public static class Processor
             string outLine = line + "," + QuoteIfNeeded(password);
             outLines.Add(outLine);
         }
+
+    /// <summary>
+    /// Normalizes a URL to just its protocol and domain (e.g., https://amazon.com).
+    /// If the URL is invalid or empty, it returns a clean fallback to prevent hash corruption.
+    /// </summary>
+    public static string CleanUrl(string rawUrl)
+    {
+        if (string.IsNullOrWhiteSpace(rawUrl))
+        {
+            return string.Empty;
+        }
+
+        // Ensure the string has a scheme so Uri.TryCreate doesn't fail on "amazon.com"
+        string urlToParse = rawUrl.Trim();
+        if (!urlToParse.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !urlToParse.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            urlToParse = "https://" + urlToParse;
+        }
+
+        if (Uri.TryCreate(urlToParse, UriKind.Absolute, out Uri? uriResult))
+        {
+            // Scheme = "https", Host = "amazon.com"
+            // This automatically drops everything after the third slash
+            return $"{uriResult.Scheme}://{uriResult.Host}".ToLowerInvariant();
+        }
+
+        // Fallback: If it's completely mangled, return a lowercase trimmed version of the raw string
+        return rawUrl.Trim().ToLowerInvariant();
+    }
 
         // Ensure output directory exists
         var outDir = Path.GetDirectoryName(outputPath);
