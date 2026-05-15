@@ -71,45 +71,8 @@ public static class Processor
             // Initial HMAC
             byte[] hash = Crypto.HmacSha256(monthlyMasterKey, block);
 
-            string password = Crypto.HashToPassword(hash, passwordLength);
-
-            // Compile regex. If no anchors (^ or $) are present, default to full-string match by anchoring the pattern.
-            Regex regex;
-            try
-            {
-                if (string.IsNullOrWhiteSpace(passwordRegex))
-                {
-                    passwordRegex = ".*"; // match anything
-                }
-
-                bool hasAnchor = passwordRegex.Contains("^") || passwordRegex.Contains("$");
-                string pattern = hasAnchor ? passwordRegex : "^" + passwordRegex + "$";
-                regex = new Regex(pattern);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Invalid regex on row {i + 1}: {ex.Message}");
-                continue;
-            }
-
-            int attempts = 0;
-            const int maxAttempts = 10000;
-            while (!regex.IsMatch(password) && attempts < maxAttempts)
-            {
-                // Deterministic re-hash: HMAC of previous hash bytes
-                hash = Crypto.HmacSha256(monthlyMasterKey, hash);
-                password = Crypto.HashToPassword(hash, passwordLength);
-                attempts++;
-            }
-
-            if (attempts >= maxAttempts)
-            {
-                Console.WriteLine($"Failed to generate password matching regex on row {i + 1} after {maxAttempts} attempts.");
-                Console.WriteLine($"  Title: {title}");
-                Console.WriteLine($"  Username: {username}");
-                Console.WriteLine($"  Regex: {passwordRegex}");
-                Console.WriteLine($"  Last candidate: {password}");
-            }
+            // Map HMAC directly to structural password: XxxxxNSxxxNN
+            string password = Crypto.MapBlobToPattern(hash);
 
             // Reconstruct output line: keep original raw fields and append password (quoted if needed)
             string outLine = line + "," + QuoteIfNeeded(password);

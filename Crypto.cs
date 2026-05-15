@@ -41,4 +41,34 @@ public static class Crypto
 
         return sb.ToString();
     }
+
+    // Map a 32-byte HMAC blob deterministically to a 12-character password with mask: XxxxxNSxxxNN
+    // X = uppercase, x = lowercase, N = number, S = special character
+    public static string MapBlobToPattern(byte[] hash)
+    {
+        if (hash == null) throw new ArgumentNullException(nameof(hash));
+        if (hash.Length < 12) throw new ArgumentException("Hash must be at least 12 bytes", nameof(hash));
+
+        // Pools
+        char[] upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".ToCharArray();
+        char[] lower = "abcdefghijklmnopqrstuvwxyz".ToCharArray();
+        char[] digits = "0123456789".ToCharArray();
+        char[] special = "!@#$%&*()-_=+[]{}<>?".ToCharArray();
+
+        // Explicit mapping for positions 0..11 using sequential bytes from hash
+        char c0 = upper[hash[0] % upper.Length];
+        char c1 = lower[hash[1] % lower.Length];
+        char c2 = lower[hash[2] % lower.Length];
+        char c3 = lower[hash[3] % lower.Length];
+        char c4 = lower[hash[4] % lower.Length];
+        char c5 = digits[hash[5] % digits.Length];
+        char c6 = special[hash[6] % special.Length];
+        char c7 = lower[hash[7] % lower.Length];
+        char c8 = lower[hash[8] % lower.Length];
+        char c9 = lower[hash[9] % lower.Length];
+        char c10 = digits[hash[10] % digits.Length];
+        char c11 = digits[hash[11] % digits.Length];
+
+        return new string(new char[] { c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11 });
+    }
 }
