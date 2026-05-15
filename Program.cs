@@ -11,10 +11,6 @@ internal partial class Program
         string folder = AppDomain.CurrentDomain.BaseDirectory;
         string configPath = Path.Combine(folder, "config.json");
 
-        Console.WriteLine("======================================");
-        Console.WriteLine("   NEW CODE LOADED SUCCESSFULLY       ");
-        Console.WriteLine("======================================");
-        
         if (File.Exists(configPath))
         {
             // Read the file content
@@ -22,14 +18,6 @@ internal partial class Program
 
             // Deserialize into a dynamic object or a specific class
             var config = JsonSerializer.Deserialize<ConfigData>(jsonString);
-
-            // Print the results
-            Console.WriteLine("--- Secret Key Configuration ---");
-            Console.WriteLine($"Input Path:  {config?.InputPath}");
-            Console.WriteLine($"Output Path: {config?.OutputPath}");
-            string rootPreview = string.IsNullOrEmpty(config?.RootKey) ? "(not set)" : (config.RootKey.Length <= 4 ? "****" : config.RootKey.Substring(0, 2) + new string('*', Math.Min(4, config.RootKey.Length - 2)));
-            Console.WriteLine($"Root Key:    {rootPreview}");
-            Console.WriteLine("--------------------------------");
 
             // Validate args: expect DateCode as args[0] in YYMM
             if (args.Length == 0)
@@ -44,6 +32,19 @@ internal partial class Program
                 Console.WriteLine("Error: DateCode must be a 4-digit YYMM string.");
                 return;
             }
+
+            // Print header showing the date code
+            Console.WriteLine("======================================");
+            Console.WriteLine($"   DateCode: {dateCode}");
+            Console.WriteLine("======================================");
+
+            // Print the results
+            Console.WriteLine("--- Secret Key Configuration ---");
+            Console.WriteLine($"Input Path:  {config?.InputPath}");
+            Console.WriteLine($"Output Path: {config?.OutputPath}");
+            string rootPreview = string.IsNullOrEmpty(config?.RootKey) ? "(not set)" : (config.RootKey.Length <= 4 ? "****" : config.RootKey.Substring(0, 2) + new string('*', Math.Min(4, config.RootKey.Length - 2)));
+            Console.WriteLine($"Root Key:    {rootPreview}");
+            Console.WriteLine("--------------------------------");
 
             // Derive Monthly Master Key
             var masterKey = Crypto.DeriveMonthlyMasterKey(config?.RootKey ?? string.Empty, dateCode);
