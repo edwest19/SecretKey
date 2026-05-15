@@ -72,8 +72,8 @@ public static class Processor
             // Note: mask controls structure; passwordLength is informational when mask contains literals
             string password = Crypto.MapBlobToPattern(hash, passwordMask);
 
-            // Reconstruct output line: keep original raw fields and append password (quoted if needed)
-            string outLine = line + "," + QuoteIfNeeded(password);
+            // Reconstruct output line: use Title, cleaned URL, Username, and append Password
+            string outLine = QuoteIfNeeded(title) + "," + QuoteIfNeeded(website) + "," + QuoteIfNeeded(username) + "," + QuoteIfNeeded(password);
             outLines.Add(outLine);
         }
 
