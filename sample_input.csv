@@ -1,7 +1,7 @@
-Title,URL,Username,Regex
-hulu.com,https://secure.hulu.com/,user@sample.com,^[A-Z][a-z]{4}[0-9][^A-Za-z0-9][a-z]{3}[0-9]{2}$
-Dickssportinggoods,https://www.dickssportinggoods.com/,user@sample.com,^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{20}$
-Sendinc,https://www.sendinc.com/,user@sample.com,^[A-Z][a-z]{4}[0-9][^A-Za-z0-9][a-z]{3}[0-9]{2}$
-Snapchat,snapchat.com,user@sample.com,^[A-Z][a-z]{4}[0-9][^A-Za-z0-9][a-z]{3}[0-9]{2}$
-Smart321,smart321.com,user@sample.com,^[A-Z][a-z]{4}[0-9][^A-Za-z0-9][a-z]{3}[0-9]{2}$
-Chess,https://www.chess.com,user@sample.com,Games
+Title,URL,Username
+hulu.com,https://secure.hulu.com,user@sample.com
+Dickssportinggoods,https://www.dickssportinggoods.com,user@sample.com
+Sendinc,https://www.sendinc.com,user@sample.com
+Snapchat,https://snapchat.com,user@sample.com
+Smart321,https://smart321.com,user@sample.com
+Chess,https://www.chess.com,user@sample.com
