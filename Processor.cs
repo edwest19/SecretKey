@@ -28,10 +28,9 @@ public static class Processor
         string header = lines[0];
         var headerFields = ParseCsvLine(header);
 
-        // Determine column indices by header names (case-insensitive). Accept URL or Website, and Regex or Password Regex.
-        int idxTitle = 0, idxWebsite = 1, idxUsername = 2, idxRegex = 3;
-        bool headerMapped = false;
-        if (headerFields.Count >= 4)
+        // Determine column indices by header names (case-insensitive). Accept URL or Website.
+        int idxTitle = 0, idxWebsite = 1, idxUsername = 2;
+        if (headerFields.Count >= 3)
         {
             for (int hi = 0; hi < headerFields.Count; hi++)
             {
@@ -39,9 +38,7 @@ public static class Processor
                 if (name == "title") idxTitle = hi;
                 else if (name == "website" || name == "url") idxWebsite = hi;
                 else if (name == "username") idxUsername = hi;
-                else if (name == "password regex" || name == "passwordregex" || name == "regex") idxRegex = hi;
             }
-            headerMapped = true;
         }
 
         string outHeader = header + ",Password";
@@ -53,8 +50,8 @@ public static class Processor
             if (string.IsNullOrWhiteSpace(line)) continue;
 
             var fields = ParseCsvLine(line);
-            // Expect at least 4 columns
-            if (fields.Count <= Math.Max(Math.Max(idxTitle, idxWebsite), Math.Max(idxUsername, idxRegex)))
+            // Expect at least 3 columns
+            if (fields.Count <= Math.Max(Math.Max(idxTitle, idxWebsite), idxUsername))
             {
                 Console.WriteLine($"Skipping malformed row {i + 1}: {line}");
                 continue;
@@ -63,7 +60,6 @@ public static class Processor
             string title = fields.Count > idxTitle ? fields[idxTitle] : string.Empty;
             string website = fields.Count > idxWebsite ? fields[idxWebsite] : string.Empty;
             string username = fields.Count > idxUsername ? fields[idxUsername] : string.Empty;
-            string passwordRegex = fields.Count > idxRegex ? fields[idxRegex] : string.Empty;
 
             // Create deterministic 32-byte block from Title+Website+Username
             byte[] block = CreateFixedBlock(title, website, username);
