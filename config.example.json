@@ -1,5 +1,7 @@
 {
   "RootKey": "REPLACE_WITH_YOUR_ROOT_KEY",
   "InputPath": "C:\\Users\\Ed\\Documents\\SecretKey\\input.csv",
-  "OutputPath": "C:\\Users\\Ed\\Documents\\SecretKey\\output.csv"
+  "OutputPath": "C:\\Users\\Ed\\Documents\\SecretKey\\output.csv",
+  "PasswordMask": "XxxxxNSxxxNN",
+  "PasswordLength": 12
 }
