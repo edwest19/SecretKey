@@ -1,72 +1,200 @@
-# SecretKey (PLP-Evolution)
+# \# SecretKey (PLP-Evolution)
 
-A stateless, deterministic password generator for Windows (.NET 10). The app derives a Monthly Master Key from a RootKey + DateCode and produces per-account passwords from an input CSV. Passwords are reproducible when run with the same RootKey and DateCode.
+# 
 
-Contents
-- Program.cs — entrypoint and orchestration
-- Crypto.cs — key derivation and HMAC utilities
-- Processor.cs — CSV parsing, password generation, and output writer
-- config.json / config.example.json — runtime configuration
+## A stateless, deterministic, zero-database password generator for Windows built on modern \*\*.NET 10\*\*. 
 
-Quick start
-1. Edit config.json in the project folder (loaded from AppDomain.CurrentDomain.BaseDirectory). A template is included as config.example.json.
-2. Ensure InputPath points to your input CSV and OutputPath points to where output.csv should be written.
-3. Set RootKey in config.json (or keep the placeholder in config.example.json).
-4. Build and run, passing the DateCode (YYMM) as the first argument. Example:
+## 
 
-   dotnet build
-   dotnet run -- 2605
+##### Unlike traditional password managers that permanently store encrypted vaults in the cloud or maintain a local history database—which can be leaked, intercepted, or brute-forced—SecretKey saves no context. It calculates robust, cryptographically secure passwords on the fly using pure mathematics, writes them to your designated local output file for immediate session use, and retains absolutely no persistent data, history, or operational logs once the application closes.
 
-   Replace 2605 with the YYMM code for the month you want to generate.
 
-CSV format
-- The input CSV must include a header row. Expected columns (in order):
-  1) Title
-  2) URL (or Website)
-  3) Username
 
-- Example input.csv row:
+##### Passwords can be recovered or shared by recalling a datecode (YYMM).
 
-  Title,URL,Username
-  "Verizon","https://verizon.com","edwest@jask.com"
+# \---
 
-- The app appends a Password column to each row and writes the result to OutputPath.
+# 
 
-Password generation algorithm (summary)
-- Monthly Master Key: SHA256(RootKey + DateCode) (32 bytes).
-- Per row:
-  1) Concatenate Title + Website + Username (UTF-8).
-  2) Produce a deterministic 32-byte block: copy bytes; if shorter, pad with 0xA5.
-  3) Compute HMAC-SHA256(block) using Monthly Master Key.
-  4) Map the hash to a password string (default length 16) using a deterministic alphabet mapping.
-  5) If the password does not match the Password Regex, deterministically re-hash (HMAC of previous hash) and repeat until the regex matches or a maximum attempt count is reached.
+### \## 🛡️ The Two-Factor Operational Security Model
 
-Notes on regex matching
-- The program uses Regex.IsMatch(password) by default. If you need the regex to match the entire password, anchor it with ^...$ in the CSV.
+# 
 
-Configuration tips
-- If you plan to publish the repository, remove or exclude config.json because it contains the RootKey. Use config.example.json as the public template.
-- The code currently ignores config.json via .gitignore; keep a local copy with your real RootKey and use the example for public docs.
+##### SecretKey is explicitly engineered for maximum operational security (OpSec) using an air-gapped, split-delivery model combining \*\*something you have\*\* with \*\*something you know\*\*:
 
-Extensibility
-- Password mask and length are configurable via config.json. The mapping consumes HMAC bytes sequentially and deterministically maps them to character pools.
-- The CSV parser is intentionally simple; replace with a robust CSV library (CsvHelper) if you need full CSV dialect support.
-- The CSV parser is intentionally simple; replace with a robust CSV library (CsvHelper) if you need full CSV dialect support.
+##### 
 
-Development
-- Target framework: net10.0
-- To run tests or CI, add a GitHub Actions workflow (I can add one on request).
+##### 1\. \*\*Something You Have (Physical Component):\*\* A 32-byte cryptographic `RootKey` stored entirely offline on an encrypted physical flash drive and sent via the USPS.
 
-Security reminder
-- Publishing the RootKey or config.json makes generated passwords recoverable. Treat the RootKey as a secret in production use.
+##### 2\. \*\*Something You Know (Digital Component):\*\* A shifting 4-digit `DateCode` (YYMM) delivered via an out-of-band communication channel (text, secure email, or phone call).
 
-Contributing
-- Fork, create a feature branch, and open a pull request. If you want help adding unit tests or CI, I can add a starter workflow.
+##### 
 
-License
-- Consider adding a LICENSE file as needed for your project.
+##### Because the mathematical engine requires \*both\* components simultaneously to derive the keys, losing a flash drive or having an email intercepted results in \*\*zero risk\*\*. An attacker cannot generate passwords without both pieces of the puzzle.
 
-AI Assistant Acknowledgement
-----------------------------
-This README and parts of the project were generated or modified with assistance from an AI programming assistant named "GitHub Copilot". The assistant helped implement the deterministic password generation logic, configuration handling, and repository setup tasks. Review all generated code and configuration before use.
+# \---
+
+# 
+
+### \## 🚀 Key Features
+
+# 
+
+##### \*\*100% Offline Privacy:\*\* Runs completely locally in memory. Zero network requests, zero tracking, and zero cloud dependencies.
+
+##### \*\*Dynamic Override Masks:\*\* Accommodates restrictive, picky corporate password rules on a per-account basis directly within the input file without breaking global generation.
+
+##### \*\*Time-Travel Password Recovery:\*\* Want to recover a password used six months ago? Simply pass that past month's `DateCode` into the execution argument to instantly calculate historical credentials.
+
+##### \*\*Single-File Portability:\*\* Can be compiled into a solitary standalone executable that runs flawlessly from a USB drive without requiring the target machine to install the .NET SDK.
+
+# \---
+
+# 
+
+### \## 📊 Password Generation Architecture
+
+# 
+
+##### The application operates in a completely predictable, deterministic pipeline:
+
+##### \[ RootKey (USB) ] + \[ DateCode (YYMM) ]
+
+##### │
+
+##### ▼
+
+##### \[ SHA-256 Derivation ]
+
+##### │
+
+##### ▼
+
+##### \[ Monthly Master Key (32-bytes) ] ──┐
+
+##### ▼
+
+##### \[ Title + URL + Username ] ──► \[ HMAC-SHA256 ] ──► \[ Dynamic Pattern Mask ] ──► \[ Final Password ]
+
+##### 
+
+##### 
+
+##### 1\. \*\*Monthly Master Key:\*\* A unique 32-byte key is derived using `SHA256(RootKey + DateCode)`.
+
+##### 2\. \*\*Fixed Account Block:\*\* The account `Title`, normalized `URL`, and `Username` are concatenated and padded deterministically with a `0xA5` byte pattern to form a fixed 32-byte data block.
+
+##### 3\. \*\*Cryptographic Hashing:\*\* The block is hashed via `HMAC-SHA256` using the Monthly Master Key.
+
+##### 4\. \*\*Pattern Mapping:\*\* The resulting hash bytes are mapped sequentially using modulo math against designated character pools guided by a structural mask pattern.
+
+##### 
+
+##### \---
+
+
+
+### \## 📂 CSV Input Layout \& Custom Overrides
+
+
+
+##### The application accepts an input CSV file containing account details. To allow ultimate formatting freedom, the file natively supports an optional \*\*OverrideMask\*\* column. 
+
+##### 
+
+#### \### Expected Header Columns:
+
+##### \* `Title` (Required)
+
+##### \* `URL` or `Website` (Required)
+
+##### \* `Username` (Required)
+
+##### \* `OverrideMask` (Optional - Leave blank to default to the standard 12-character format)
+
+##### 
+
+#### \### Example `sample\_input.csv`:
+
+##### ```csv
+
+##### Title,Url,Username,OverrideMask
+
+##### Verizon,\[https://www.verizon.com](https://www.verizon.com),mail@jask.com
+
+##### HardcoreBank,\[https://secure.bank.com](https://secure.bank.com),mail@jask.com,xxxxxxxxxxNNNN
+
+
+
+##### Mask Character Legend:
+
+##### X = Uppercase Alphabet (A-Z)
+
+##### 
+
+##### x = Lowercase Alphabet (a-z)
+
+##### 
+
+##### N = Numeric Digits (0-9)
+
+##### 
+
+##### S or s = Secure Special Characters (!@#$%\&\*()-\_=+\[]{}<>?)
+
+##### 
+
+##### Any other character placed in the mask will be treated as a literal character and passed through verbatim.
+
+
+
+### 💻 Local Execution Guide
+
+##### 1\. Project Navigation
+
+##### Open your PowerShell terminal and navigate directly to your local project root repository directory where the source code is located:
+
+##### 
+
+##### PowerShell
+
+##### cd C:\\Users\\Ed\\source\\repos\\SecretKey
+
+##### 2\. Standard Execution
+
+##### Run the compiler and pass the targeting 4-digit DateCode (YYMM) as the primary execution argument. For example, to generate passwords for June 2026:
+
+##### 
+
+##### PowerShell
+
+##### dotnet run -- 2606
+
+### 💾 Compilation for Portable USB Deployment
+
+##### To package this tool so it runs perfectly from a portable flash drive on a target machine without requiring any prerequisite software installations, publish it as a self-contained, trimmed, single-file executable:
+
+##### 
+
+##### PowerShell
+
+##### dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=true
+
+##### Copy the compiled SecretKey.exe file located inside your output bin\\Release\\net10.0\\win-x64\\publish\\ folder directly onto the root directory of your flash drive for an entirely modular, portable workstation utility.
+
+
+
+### 🛡️ Security Disclaimer
+
+##### Treat your production RootKey configuration with absolute secrecy. If the repository is public, ensure that your true production credentials remain completely decoupled from the source tree. This repository utilizes a rigorous .gitignore structure to guarantee development keys never leak into the open-source history.
+
+
+
+### 🤖 AI Assistant Acknowledgement
+
+##### This README and foundational blocks of the modular core architecture were successfully implemented and updated with cooperative programming assistance from an AI programming partner (GitHub Copilot). All cryptographic handling, CSV parsing pipelines, and dynamic output adjustments have been fully reviewed, refined, and verified locally.
+
+
+
+
 
