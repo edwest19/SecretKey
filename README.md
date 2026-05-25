@@ -59,25 +59,19 @@
 ##### The application operates in a completely predictable, deterministic pipeline:
 
 ##### \[ RootKey (USB) ] + \[ DateCode (YYMM) ]
-
 ##### │
-
 ##### ▼
 
 ##### \[ SHA-256 Derivation ]
-
 ##### │
-
 ##### ▼
 
 ##### \[ Monthly Master Key (32-bytes) ] ──┐
-
 ##### ▼
 
 ##### \[ Title + URL + Username ] ──► \[ HMAC-SHA256 ] ──► \[ Dynamic Pattern Mask ] ──► \[ Final Password ]
 
 ##### 
-
 ##### 
 
 ##### 1\. \*\*Monthly Master Key:\*\* A unique 32-byte key is derived using `SHA256(RootKey + DateCode)`.
