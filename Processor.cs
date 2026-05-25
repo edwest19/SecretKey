@@ -28,8 +28,8 @@ public static class Processor
         string header = lines[0];
         var headerFields = ParseCsvLine(header);
 
-        // Determine column indices by header names (case-insensitive). Accept URL or Website.
-        int idxTitle = 0, idxWebsite = 1, idxUsername = 2;
+        // Determine column indices by header names (case-insensitive). Added overridemask.
+        int idxTitle = 0, idxWebsite = 1, idxUsername = 2, idxOverrideMask = -1; // -1 means "not found yet"
         if (headerFields.Count >= 3)
         {
             for (int hi = 0; hi < headerFields.Count; hi++)
@@ -38,6 +38,7 @@ public static class Processor
                 if (name == "title") idxTitle = hi;
                 else if (name == "website" || name == "url") idxWebsite = hi;
                 else if (name == "username") idxUsername = hi;
+                else if (name == "overridemask") idxOverrideMask = hi; // Track where the override mask is!
             }
         }
 
@@ -61,6 +62,15 @@ public static class Processor
             string website = fields.Count > idxWebsite ? fields[idxWebsite] : string.Empty;
             string username = fields.Count > idxUsername ? fields[idxUsername] : string.Empty;
 
+            // --- THE CORE CHANGE ---
+            // Look to see if an override mask column exists in the CSV header and if this row contains data there.
+            string activeMask = passwordMask; // Default to our standard argument ("XxxxxNSxxxNN")
+            if (idxOverrideMask != -1 && fields.Count > idxOverrideMask && !string.IsNullOrWhiteSpace(fields[idxOverrideMask]))
+            {
+                activeMask = fields[idxOverrideMask].Trim(); // Found an override! Switch to it.
+            }
+            // -----------------------
+
             // Normalize URL to protocol + domain, then create deterministic 32-byte block from Title+Website+Username
             website = CleanUrl(website);
             byte[] block = CreateFixedBlock(title, website, username);
@@ -68,12 +78,16 @@ public static class Processor
             // Initial HMAC
             byte[] hash = Crypto.HmacSha256(monthlyMasterKey, block);
 
-            // Map HMAC to password using configured mask and length
-            // Note: mask controls structure; passwordLength is informational when mask contains literals
-            string password = Crypto.MapBlobToPattern(hash, passwordMask);
+            // Map HMAC to password using our active mask (either default or override)
+            string password = Crypto.MapBlobToPattern(hash, activeMask);
 
-            // Reconstruct output line: use Title, cleaned URL, Username, and append Password
-            string outLine = QuoteIfNeeded(title) + "," + QuoteIfNeeded(website) + "," + QuoteIfNeeded(username) + "," + QuoteIfNeeded(password);
+            // --- FIXED OUTPUT LINE CONSTRUCTION ---
+            // This strictly outputs Title, Website, Username, and Password.
+            // It uses the override mask to calculate the password, but drops it from the output file!
+            string outLine = QuoteIfNeeded(title) + "," +
+                             QuoteIfNeeded(website) + "," +
+                             QuoteIfNeeded(username) + "," +
+                             QuoteIfNeeded(password);
             outLines.Add(outLine);
         }
 
