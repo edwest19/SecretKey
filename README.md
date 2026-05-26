@@ -28,94 +28,53 @@ Because the underlying mathematical engine strictly requires **both** independen
 * **Dynamic Override Masks:** Accommodates restrictive, picky corporate password complexity rules on a per-account basis directly within the input file without altering global mathematical generation constraints.
 * **Single-File USB Portability:** Compiles into a solitary, sandboxed executable that runs flawlessly directly from an offline thumb drive without requiring the target host machine to install the .NET SDK or run persistent background processes.
 
-### \## 📊 Password Generation Architecture
+## 📊 Password Generation Architecture
 
-# 
+The application operates in a completely predictable, deterministic pipeline:
 
-##### The application operates in a completely predictable, deterministic pipeline:
+```text
+[ RootKey (USB) ] + [ DateCode (YYMM) ]
+       │
+       ▼
+[ SHA-256 Derivation ]
+       │
+       ▼
+[ Monthly Master Key (32-bytes) ] ──┐
+                                    ▼
+[ Title + URL + Username ] ──► [ HMAC-SHA256 ] ──► [ Dynamic Pattern Mask ] ──► [ Final Password ]
 
-##### \[ RootKey (USB) ] + \[ DateCode (YYMM) ]
-##### │
-##### ▼
+1. **Monthly Master Key:** A unique 32-byte key is derived using `SHA256(RootKey + DateCode)`.
+2. **Fixed Account Block:** The account `Title`, normalized `URL`, and `Username` are concatenated and padded deterministically with a `0xA5` byte pattern to form a fixed data block.
+3. **Cryptographic Hashing:** The block is hashed via `HMAC-SHA256` using the Monthly Master Key.
+4. **Pattern Mapping:** The resulting hash bytes are mapped sequentially using modulo math against designated character pools guided by a structural mask pattern.
 
-##### \[ SHA-256 Derivation ]
-##### │
-##### ▼
+---
 
-##### \[ Monthly Master Key (32-bytes) ] ──┐
-##### ▼
+## 📂 CSV Input Layout & Custom Overrides
 
-##### \[ Title + URL + Username ] ──► \[ HMAC-SHA256 ] ──► \[ Dynamic Pattern Mask ] ──► \[ Final Password ]
+The application accepts an input CSV file containing account details. To allow ultimate formatting freedom, the file natively supports an optional **OverrideMask** column. 
 
-##### 
-##### 
+### Expected Header Columns:
+* `Title` (Required)
+* `URL` or `Website` (Required)
+* `Username` (Required)
+* `OverrideMask` (Optional - Leave blank to default to the standard 12-character format)
 
-##### 1\. \*\*Monthly Master Key:\*\* A unique 32-byte key is derived using `SHA256(RootKey + DateCode)`.
-
-##### 2\. \*\*Fixed Account Block:\*\* The account `Title`, normalized `URL`, and `Username` are concatenated and padded deterministically with a `0xA5` byte pattern to form a fixed 32-byte data block.
-
-##### 3\. \*\*Cryptographic Hashing:\*\* The block is hashed via `HMAC-SHA256` using the Monthly Master Key.
-
-##### 4\. \*\*Pattern Mapping:\*\* The resulting hash bytes are mapped sequentially using modulo math against designated character pools guided by a structural mask pattern.
-
-##### 
-
-##### \---
-
-
-
-### \## 📂 CSV Input Layout \& Custom Overrides
-
-
-
-##### The application accepts an input CSV file containing account details. To allow ultimate formatting freedom, the file natively supports an optional \*\*OverrideMask\*\* column. 
-
-##### 
-
-#### \### Expected Header Columns:
-
-##### \* `Title` (Required)
-
-##### \* `URL` or `Website` (Required)
-
-##### \* `Username` (Required)
-
-##### \* `OverrideMask` (Optional - Leave blank to default to the standard 12-character format)
-
-##### 
-
-#### \### Example `sample\_input.csv`:
-
-##### ```csv
-
-##### Title,Url,Username,OverrideMask
-
-##### Verizon,\[https://www.verizon.com](https://www.verizon.com),mail@jask.com
-
-##### HardcoreBank,\[https://secure.bank.com](https://secure.bank.com),mail@jask.com,xxxxxxxxxxNNNN
+### Example `sample_input.csv`:
+```csv
+Title,Url,Username,OverrideMask
+Verizon,www.verizon.com,mail@jask.com
+Secure Bank,https://secure.bank.com,mail@jask.com,xxxxxxxxxxNNNN
 
 
+### Mask Character Legend:
 
-##### Mask Character Legend:
+X = Uppercase Alphabet (A-Z)
+x = Lowercase Alphabet (a-z)
+N = Numeric Digits (0-9)
+S or s = Special Characters (!@#$%\&\*()-\_=+\[]{}<>?)
 
-##### X = Uppercase Alphabet (A-Z)
-
-##### 
-
-##### x = Lowercase Alphabet (a-z)
-
-##### 
-
-##### N = Numeric Digits (0-9)
-
-##### 
-
-##### S or s = Secure Special Characters (!@#$%\&\*()-\_=+\[]{}<>?)
-
-##### 
-
-##### Any other character placed in the mask will be treated as a literal character and passed through verbatim.
-
+## Any other character placed in the mask will be treated as a literal character and passed through verbatim.
 
 
 ### 💻 Local Execution Guide
