@@ -1,54 +1,31 @@
-# \# SecretKey (PLP-Evolution)
+# SecretKey (PLP-Evolution)
 
-# 
+A deterministic, zero-database password generation utility for Windows built on modern **.NET 10**. 
 
-## A stateless, deterministic, zero-database password generator for Windows built on modern \*\*.NET 10\*\*. 
+Unlike traditional password managers that store encrypted vaults in the cloud or maintain a persistent local history database—which can be leaked, intercepted, or brute-forced—**SecretKey saves no operational context**. The application architecture is completely memory-centric: it calculates robust, cryptographically secure passwords on the fly using pure mathematics, writes them cleanly to a local output file for immediate session use, and retains absolutely no persistent data, history, or background configuration logs. 
 
-## 
+Once the process finishes and the output file is handled, the application leaves no footprint. Passwords can be replicated or recovered at any time simply by recalling a 4-digit datecode (YYMM).
 
-##### Unlike traditional password managers that permanently store encrypted vaults in the cloud or maintain a local history database—which can be leaked, intercepted, or brute-forced—SecretKey saves no context. It calculates robust, cryptographically secure passwords on the fly using pure mathematics, writes them to your designated local output file for immediate session use, and retains absolutely no persistent data, history, or operational logs once the application closes.
+---
 
+## 🛡️ The Two-Factor Operational Security Model
 
+SecretKey is explicitly engineered for maximum operational security (OpSec) using an air-gapped, split-delivery model combining **something you have** with **something you know**:
 
-##### Passwords can be recovered or shared by recalling a datecode (YYMM).
+1. **Something You Have (Physical Component):** A 32-byte cryptographic `RootKey` stored entirely offline on an encrypted physical flash drive.
+2. **Something You Know (Digital Component):** A shifting 4-digit `DateCode` (YYMM) delivered via an out-of-band communication channel (such as a text message, secure email, or phone call).
 
-# \---
+Because the mathematical engine requires *both* components simultaneously to derive keys, losing a flash drive or having an email intercepted results in **zero risk**. An attacker cannot generate passwords without both pieces of the puzzle.
 
-# 
+---
 
-### \## 🛡️ The Two-Factor Operational Security Model
+## 🚀 Key Features
 
-# 
-
-##### SecretKey is explicitly engineered for maximum operational security (OpSec) using an air-gapped, split-delivery model combining \*\*something you have\*\* with \*\*something you know\*\*:
-
-##### 
-
-##### 1\. \*\*Something You Have (Physical Component):\*\* A 32-byte cryptographic `RootKey` stored entirely offline on an encrypted physical flash drive and sent via the USPS.
-
-##### 2\. \*\*Something You Know (Digital Component):\*\* A shifting 4-digit `DateCode` (YYMM) delivered via an out-of-band communication channel (text, secure email, or phone call).
-
-##### 
-
-##### Because the mathematical engine requires \*both\* components simultaneously to derive the keys, losing a flash drive or having an email intercepted results in \*\*zero risk\*\*. An attacker cannot generate passwords without both pieces of the puzzle.
-
-# \---
-
-# 
-
-### \## 🚀 Key Features
-
-# 
-
-##### \*\*100% Offline Privacy:\*\* Runs completely locally in memory. Zero network requests, zero tracking, and zero cloud dependencies.
-
-##### \*\*Dynamic Override Masks:\*\* Accommodates restrictive, picky corporate password rules on a per-account basis directly within the input file without breaking global generation.
-
-##### \*\*Time-Travel Password Recovery:\*\* Want to recover a password used six months ago? Simply pass that past month's `DateCode` into the execution argument to instantly calculate historical credentials.
-
-##### \*\*Single-File Portability:\*\* Can be compiled into a solitary standalone executable that runs flawlessly from a USB drive without requiring the target machine to install the .NET SDK.
-
-# \---
+* **Zero-Context Footprint:** No background processes, no internal databases, no tracking, and zero cloud dependencies. It only interacts with the files you explicitly provide.
+* **Ephemeral Output Workflow:** Designed for a "generate-use-and-delete" model. Users generate their required passwords for the session, copy what they need, and securely delete the output file—returning the host machine to a state of zero exposure.
+* **Dynamic Override Masks:** Accommodates restrictive, picky corporate password rules on a per-account basis directly within the input file without breaking global generation logic.
+* **Time-Travel Password Recovery:** Need to recover a password used six months ago? Simply pass that past month's `DateCode` into the execution argument to instantly calculate historical credentials without maintaining a history log.
+* **Single-File Portability:** Can be compiled into a solitary, standalone executable that runs flawlessly from an offline USB drive without requiring the target machine to install the .NET SDK.
 
 # 
 
@@ -190,11 +167,8 @@
 
 
 
-### 🤖 AI Assistant Acknowledgement
+## 🤖 AI Assistant Acknowledgement
 
-##### This README and foundational blocks of the modular core architecture were successfully implemented and updated with cooperative programming assistance from an AI programming partner (GitHub Copilot). All cryptographic handling, CSV parsing pipelines, and dynamic output adjustments have been fully reviewed, refined, and verified locally.
-
-
-
+This README and foundational blocks of the modular core architecture were successfully implemented and updated with cooperative programming assistance from an AI programming partner (**GitHub Copilot**). All cryptographic handling, CSV parsing pipelines, and dynamic output adjustments have been fully reviewed, refined, and verified locally.
 
 
