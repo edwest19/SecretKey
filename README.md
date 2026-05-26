@@ -2,32 +2,31 @@
 
 A deterministic, zero-database password generation utility for Windows built on modern **.NET 10**. 
 
-Unlike traditional password managers that store encrypted vaults in the cloud or maintain a persistent local history database—which can be leaked, intercepted, or brute-forced—**SecretKey saves no operational context**. The application architecture is completely memory-centric: it calculates robust, cryptographically secure passwords on the fly using pure mathematics, writes them cleanly to a local output file for immediate session use, and retains absolutely no persistent data, history, or background configuration logs. 
+Unlike traditional cloud-dependent credential platforms, **SecretKey saves no operational context** and maintains no centralized vault database. Instead, the application functions as a high-security batch generator designed to refresh your entire credential suite on a rolling monthly schedule. 
 
-Once the process finishes and the output file is handled, the application leaves no footprint. Passwords can be replicated or recovered at any time simply by recalling a 4-digit datecode (YYMM).
+By calculating robust, cryptographically secure passwords on the fly using pure mathematics, it outputs a standardized, session-specific file ready for immediate bulk import into password managers (such as Bitdefender). The core application retains absolutely no persistent data, internal history, or tracking logs once the generation cycle completes.
 
 ---
 
-## 🛡️ The Two-Factor Operational Security Model
+## 🛡️ The Split-Delivery Distribution & Security Model
 
-SecretKey is explicitly engineered for maximum operational security (OpSec) using an air-gapped, split-delivery model combining **something you have** with **something you know**:
+SecretKey is explicitly optimized for safe deployment, secure credential sharing, and air-gapped protection using a strict dual-channel distribution framework:
 
-1. **Something You Have (Physical Component):** A 32-byte cryptographic `RootKey` stored entirely offline on an encrypted physical flash drive.
-2. **Something You Know (Digital Component):** A shifting 4-digit `DateCode` (YYMM) delivered via an out-of-band communication channel (such as a text message, secure email, or phone call).
+1. **The Physical Channel (Something You Have):** A 32-byte cryptographic `RootKey` and the standalone, portable compiled utility are stored entirely offline on a physical USB flash drive, safely distributed via physical transit (such as the USPS).
+2. **The Digital Channel (Something You Know):** A shifting, 4-digit numeric `DateCode` (YYMM) alongside the plain-text account configuration metadata input file (`.csv`) is delivered out-of-band via standard digital communication lines (such as email or text).
 
-Because the mathematical engine requires *both* components simultaneously to derive keys, losing a flash drive or having an email intercepted results in **zero risk**. An attacker cannot generate passwords without both pieces of the puzzle.
+Because the underlying mathematical engine strictly requires **both** independent components simultaneously to calculate keys, intercepting a digital file transfer or losing a physical flash drive in transit results in **zero risk**. An attacker cannot generate or reconstruct passwords without matching both pieces of the puzzle.
 
 ---
 
 ## 🚀 Key Features
 
-* **Zero-Context Footprint:** No background processes, no internal databases, no tracking, and zero cloud dependencies. It only interacts with the files you explicitly provide.
-* **Ephemeral Output Workflow:** Designed for a "generate-use-and-delete" model. Users generate their required passwords for the session, copy what they need, and securely delete the output file—returning the host machine to a state of zero exposure.
-* **Dynamic Override Masks:** Accommodates restrictive, picky corporate password rules on a per-account basis directly within the input file without breaking global generation logic.
-* **Time-Travel Password Recovery:** Need to recover a password used six months ago? Simply pass that past month's `DateCode` into the execution argument to instantly calculate historical credentials without maintaining a history log.
-* **Single-File Portability:** Can be compiled into a solitary, standalone executable that runs flawlessly from an offline USB drive without requiring the target machine to install the .NET SDK.
-
-# 
+* **Rolling Monthly Rotations:** Explicitly built to generate distinct, fresh password batches every month. Easily keep your security posture dynamic without manually inventing new keys for every individual profile.
+* **Bulk Import Compatibility:** Generates standard, clean output files formatted specifically for rapid import into local credential managers like Bitdefender—bypassing the friction of passkeys or complex multi-factor setups.
+* **Frictionless "Forgot Password" Resiliency:** Since credentials are dynamically rotated in mass batches, any individual service or account variance is cleanly managed through native platform password reset loops without breaking global generator synchronization.
+* **Historical Time-Travel Recovery:** Need to recover a legacy credential utilized six months ago? Simply pass that specific historical month's `DateCode` (e.g., `2511` for November 2025) as the primary runtime execution argument to instantly recalculate past keys without keeping an active history database.
+* **Dynamic Override Masks:** Accommodates restrictive, picky corporate password complexity rules on a per-account basis directly within the input file without altering global mathematical generation constraints.
+* **Single-File USB Portability:** Compiles into a solitary, sandboxed executable that runs flawlessly directly from an offline thumb drive without requiring the target host machine to install the .NET SDK or run persistent background processes.
 
 ### \## 📊 Password Generation Architecture
 
