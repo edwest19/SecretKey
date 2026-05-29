@@ -35,6 +35,8 @@ Example configuration layout:
   "PasswordMask": "XxxxxNSxxxNN"
 }
 
+```
+
 ⚠️ Security Notice: Ensure config.json is added to your local .gitignore ruleset to prevent exposing sensitive environment paths or cryptographic previews to cloud repository histories.
 
 ---
