@@ -30,6 +30,7 @@ Example configuration layout:
 ```json
 
 {
+  "RootKey": "your 32 btye hex key here",
   "InputPath": "C:\\Users\\Ed\\Documents\\SecretKey\\input.csv",
   "OutputPath": "C:\\Users\\Ed\\Documents\\SecretKey\\output.csv",
   "PasswordMask": "XxxxxNSxxxNN"
