@@ -27,6 +27,8 @@ The application avoids default hardcoded rules, instead retrieving operational s
 
 Example configuration layout:
 
+```json
+
 {
   "InputPath": "C:\\Users\\Ed\\Documents\\SecretKey\\input.csv",
   "OutputPath": "C:\\Users\\Ed\\Documents\\SecretKey\\output.csv",
