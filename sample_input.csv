@@ -1,7 +1,5 @@
-Title,URL,Username
-hulu.com,https://secure.hulu.com,user@sample.com
-Dickssportinggoods,https://www.dickssportinggoods.com,user@sample.com
-Sendinc,https://www.sendinc.com,user@sample.com
-Snapchat,https://snapchat.com,user@sample.com
-Smart321,https://smart321.com,user@sample.com
-Chess,https://www.chess.com,user@sample.com
+Title,Url,Username,Password,OTPAuth,Favorite,Archived,Tags,Notes
+Bhphotovideo,https://www.bhphotovideo.com,email@sample.com,,,false,false,Shopping,
+Paramount+,paramountplus.com,email@yahoo.com,,,false,false,TV,
+Solterra,,email@sample.com,,,false,false,,passwordmask=xxxxxxxxNNNN
+MTA eTix,https://www.mta.info/,email@sample.com,,,false,false,Travel,

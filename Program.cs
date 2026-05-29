@@ -1,5 +1,9 @@
 ﻿// AI Assistant Acknowledgement: This file was created or modified with assistance from an AI programming assistant named "GitHub Copilot".
 // Review generated code before use and treat any embedded secrets appropriately.
+// ============================================================================
+// Copyright (c) 2026 edwest19
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+// ============================================================================
 using System;
 using System.IO;
 using System.Text.Json;
@@ -43,7 +47,6 @@ internal partial class Program
             Console.WriteLine($"Input Path:  {config?.InputPath}");
             Console.WriteLine($"Output Path: {config?.OutputPath}");
             Console.WriteLine($"Password Mask: {config?.PasswordMask}");
-            Console.WriteLine($"Password Length: {config?.PasswordLength}");
             string rootPreview = string.IsNullOrEmpty(config?.RootKey) ? "(not set)" : (config.RootKey.Length <= 4 ? "****" : config.RootKey.Substring(0, 2) + new string('*', Math.Min(4, config.RootKey.Length - 2)));
             Console.WriteLine($"Root Key:    {rootPreview}");
             Console.WriteLine("--------------------------------");
@@ -52,7 +55,11 @@ internal partial class Program
             var masterKey = Crypto.DeriveMonthlyMasterKey(config?.RootKey ?? string.Empty, dateCode);
 
             // Run processor with configurable mask/length from config
-            Processor.Process(config?.InputPath ?? string.Empty, config?.OutputPath ?? string.Empty, masterKey, config?.PasswordLength ?? 12, config?.PasswordMask ?? "XxxxxNSxxxNN");
+            Processor.Process(
+                config?.InputPath ?? string.Empty, 
+                config?.OutputPath ?? string.Empty, 
+                masterKey, 
+                config?.PasswordMask ?? "XxxxxNSxxxNN");
         }
         else
         {
@@ -71,5 +78,4 @@ public class ConfigData
     public string OutputPath { get; set; } = string.Empty;
     public string RootKey { get; set; } = string.Empty;
     public string PasswordMask { get; set; } = "XxxxxNSxxxNN";
-    public int PasswordLength { get; set; } = 12;
 }

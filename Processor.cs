@@ -1,5 +1,12 @@
 // AI Assistant Acknowledgement: This file was created or modified with assistance from an AI programming assistant named "GitHub Copilot".
 // Review generated code before use and treat any embedded secrets appropriately.
+// ============================================================================
+// Copyright (c) 2026 edwest19
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+// ============================================================================
+// AI Assistant Acknowledgement: This file was created or modified with assistance from an AI programming assistant named "GitHub Copilot".
+// Review generated code before use and treat any embedded secrets appropriately.
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,8 +15,9 @@ using System.Text.RegularExpressions;
 
 public static class Processor
 {
-    // Process the input CSV and write output CSV (appending Password column)
-    public static void Process(string inputPath, string outputPath, byte[] monthlyMasterKey, int passwordLength = 16, string passwordMask = "XxxxxNSxxxNN")
+    private static readonly Regex MaskRegex = new Regex(@"passwordmask=([A-Za-zNSs]+)", RegexOptions.Compiled);
+
+    public static void Process(string inputPath, string outputPath, byte[] monthlyMasterKey, string defaultPasswordMask = "XxxxxNSxxxNN")
     {
         if (!File.Exists(inputPath))
         {
@@ -17,81 +25,94 @@ public static class Processor
             return;
         }
 
-        var lines = File.ReadAllLines(inputPath);
-        if (lines.Length == 0)
+        // --- FIX: Read the entire file as a single string block ---
+        string fullText = File.ReadAllText(inputPath, Encoding.UTF8);
+        var records = ParseFullCsvText(fullText);
+
+        if (records.Count == 0)
         {
             Console.WriteLine("Input CSV is empty.");
             return;
         }
 
-        // Parse header and prepare output header
-        string header = lines[0];
-        var headerFields = ParseCsvLine(header);
+        // The first record is our header row
+        var headerFields = records[0];
 
-        // Determine column indices by header names (case-insensitive). Added overridemask.
-        int idxTitle = 0, idxWebsite = 1, idxUsername = 2, idxOverrideMask = -1; // -1 means "not found yet"
-        if (headerFields.Count >= 3)
+        // Reconstruct a clean header string for our output file
+        var headerBuilder = new StringBuilder();
+        for (int h = 0; h < headerFields.Count; h++)
         {
-            for (int hi = 0; hi < headerFields.Count; hi++)
-            {
-                var name = headerFields[hi].Trim().ToLowerInvariant();
-                if (name == "title") idxTitle = hi;
-                else if (name == "website" || name == "url") idxWebsite = hi;
-                else if (name == "username") idxUsername = hi;
-                else if (name == "overridemask") idxOverrideMask = hi; // Track where the override mask is!
-            }
+            headerBuilder.Append(QuoteIfNeeded(headerFields[h]));
+            if (h < headerFields.Count - 1) headerBuilder.Append(',');
         }
 
-        string outHeader = header + ",Password";
-        var outLines = new List<string> { outHeader };
+        var outLines = new List<string> { headerBuilder.ToString() };
 
-        for (int i = 1; i < lines.Length; i++)
+        const int idxTitle = 0;
+        const int idxWebsite = 1;
+        const int idxUsername = 2;
+        const int idxPassword = 3;
+        const int idxNotes = 8;
+
+        // Start loop at 1 to skip the header record
+        for (int i = 1; i < records.Count; i++)
         {
-            string line = lines[i];
-            if (string.IsNullOrWhiteSpace(line)) continue;
+            var fields = records[i];
 
-            var fields = ParseCsvLine(line);
-            // Expect at least 3 columns
-            if (fields.Count <= Math.Max(Math.Max(idxTitle, idxWebsite), idxUsername))
+            // Skip purely empty lines at the end of the file
+            if (fields.Count == 0 || (fields.Count == 1 && string.IsNullOrWhiteSpace(fields[0]))) continue;
+
+            if (fields.Count < 3)
             {
-                Console.WriteLine($"Skipping malformed row {i + 1}: {line}");
+                // Let's print a clean preview of the malformed data for diagnostics
+                string preview = fields.Count > 0 ? fields[0] : "Empty Fragment";
+                Console.WriteLine($"Skipping malformed row {i + 1}: {preview.Replace("\r", " ").Replace("\n", " ")}");
                 continue;
             }
 
-            string title = fields.Count > idxTitle ? fields[idxTitle] : string.Empty;
-            string website = fields.Count > idxWebsite ? fields[idxWebsite] : string.Empty;
-            string username = fields.Count > idxUsername ? fields[idxUsername] : string.Empty;
+            string title = fields[idxTitle];
+            string website = fields[idxWebsite];
+            string username = fields[idxUsername];
 
-            // --- THE CORE CHANGE ---
-            // Look to see if an override mask column exists in the CSV header and if this row contains data there.
-            string activeMask = passwordMask; // Default to our standard argument ("XxxxxNSxxxNN")
-            if (idxOverrideMask != -1 && fields.Count > idxOverrideMask && !string.IsNullOrWhiteSpace(fields[idxOverrideMask]))
+            while (fields.Count < 9)
             {
-                activeMask = fields[idxOverrideMask].Trim(); // Found an override! Switch to it.
+                fields.Add(string.Empty);
             }
-            // -----------------------
 
-            // Normalize URL to protocol + domain, then create deterministic 32-byte block from Title+Website+Username
+            string activeMask = defaultPasswordMask;
+            string notesField = fields[idxNotes];
+
+            if (!string.IsNullOrWhiteSpace(notesField))
+            {
+                var match = MaskRegex.Match(notesField);
+                if (match.Success)
+                {
+                    activeMask = match.Groups[1].Value.Trim();
+                }
+            }
+
             website = CleanUrl(website);
             byte[] block = CreateFixedBlock(title, website, username);
 
-            // Initial HMAC
             byte[] hash = Crypto.HmacSha256(monthlyMasterKey, block);
-
-            // Map HMAC to password using our active mask (either default or override)
             string password = Crypto.MapBlobToPattern(hash, activeMask);
 
-            // --- FIXED OUTPUT LINE CONSTRUCTION ---
-            // This strictly outputs Title, Website, Username, and Password.
-            // It uses the override mask to calculate the password, but drops it from the output file!
-            string outLine = QuoteIfNeeded(title) + "," +
-                             QuoteIfNeeded(website) + "," +
-                             QuoteIfNeeded(username) + "," +
-                             QuoteIfNeeded(password);
-            outLines.Add(outLine);
+            // Blindly overwrite the password column
+            fields[idxPassword] = password;
+
+            // Reconstruct the line preserving multi-line notes inside quotes flawlessly
+            var sb = new StringBuilder();
+            for (int f = 0; f < fields.Count; f++)
+            {
+                sb.Append(QuoteIfNeeded(fields[f]));
+                if (f < fields.Count - 1)
+                {
+                    sb.Append(',');
+                }
+            }
+            outLines.Add(sb.ToString());
         }
 
-        // Ensure output directory exists
         var outDir = Path.GetDirectoryName(outputPath);
         if (!string.IsNullOrEmpty(outDir) && !Directory.Exists(outDir)) Directory.CreateDirectory(outDir);
 
@@ -99,45 +120,85 @@ public static class Processor
         Console.WriteLine($"Processed {outLines.Count - 1} rows. Output written to {outputPath}");
     }
 
-    // Simple CSV parser for a single line supporting quoted fields
-    private static List<string> ParseCsvLine(string line)
-    {
-        var fields = new List<string>();
-        if (line == null) return fields;
+    /// <summary>
+    /// State machine parser that processes an entire CSV file text block.
+    /// Safely ignores commas and line breaks that occur inside open quotes.
+    /// </summary>
+    // AI Assistant Acknowledgement: This file was created or modified with assistance from an AI programming assistant named "GitHub Copilot".
+    // Review generated code before use and treat any embedded secrets appropriately.
 
-        var sb = new StringBuilder();
+    private static List<List<string>> ParseFullCsvText(string text)
+    {
+        var allRecords = new List<List<string>>();
+        if (string.IsNullOrEmpty(text)) return allRecords;
+
+        var currentRecord = new List<string>();
+        var currentField = new StringBuilder();
         bool inQuotes = false;
-        for (int i = 0; i < line.Length; i++)
+
+        for (int i = 0; i < text.Length; i++)
         {
-            char c = line[i];
+            char c = text[i];
+
             if (c == '"')
             {
-                if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
+                // Handle standard double-quote escaping ("") inside data blocks
+                if (inQuotes && i + 1 < text.Length && text[i + 1] == '"')
                 {
-                    // Escaped quote
-                    sb.Append('"');
-                    i++; // skip next
+                    currentField.Append('"');
+                    i++; // Skip the secondary sequence character token
                 }
                 else
                 {
-                    inQuotes = !inQuotes;
+                    inQuotes = !inQuotes; // Flip state
                 }
             }
             else if (c == ',' && !inQuotes)
             {
-                fields.Add(sb.ToString());
-                sb.Clear();
+                // End of field: Add the accumulated field string token to the current record row array
+                currentRecord.Add(currentField.ToString());
+                currentField.Clear();
+            }
+            else if (c == '\n' && !inQuotes)
+            {
+                // End of true row: Flush final field string token, then save full row record array
+                currentRecord.Add(currentField.ToString());
+                allRecords.Add(currentRecord);
+
+                currentRecord = new List<string>();
+                currentField.Clear();
+            }
+            else if (c == '\r' && !inQuotes)
+            {
+                // End of true row (Windows Line Endings): Peak ahead to check for \n
+                currentRecord.Add(currentField.ToString());
+                allRecords.Add(currentRecord);
+
+                currentRecord = new List<string>();
+                currentField.Clear();
+
+                if (i + 1 < text.Length && text[i + 1] == '\n')
+                {
+                    i++;
+                }
             }
             else
             {
-                sb.Append(c);
+                // Standard data payload character
+                currentField.Append(c);
             }
         }
 
-        fields.Add(sb.ToString());
-        return fields;
-    }
+        // Flush any trailing structural field or line hanging without a clean termination token
+        if (currentField.Length > 0 || currentRecord.Count > 0)
+        {
+            currentRecord.Add(currentField.ToString());
+            allRecords.Add(currentRecord);
+        }
 
+        return allRecords;
+    }
+    // Keep your existing CreateFixedBlock, QuoteIfNeeded, and CleanUrl methods completely unchanged below...
     // Create a deterministic 32-byte block from the concatenation of title, website, and username.
     private static byte[] CreateFixedBlock(string title, string website, string username)
     {
@@ -146,7 +207,6 @@ public static class Processor
         const int size = 32;
         var block = new byte[size];
 
-        // If bytes shorter than size, copy and pad with deterministic pattern (0x00.. then length)
         if (bytes.Length >= size)
         {
             Array.Copy(bytes, block, size);
@@ -173,7 +233,6 @@ public static class Processor
 
     /// <summary>
     /// Normalizes a URL to just its protocol and domain (e.g., https://amazon.com).
-    /// If the URL is invalid or empty, it returns a clean fallback to prevent hash corruption.
     /// </summary>
     public static string CleanUrl(string rawUrl)
     {
@@ -182,7 +241,6 @@ public static class Processor
             return string.Empty;
         }
 
-        // Ensure the string has a scheme so Uri.TryCreate doesn't fail on "amazon.com"
         string urlToParse = rawUrl.Trim();
         if (!urlToParse.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !urlToParse.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
         {
@@ -191,12 +249,9 @@ public static class Processor
 
         if (Uri.TryCreate(urlToParse, UriKind.Absolute, out Uri? uriResult))
         {
-            // Scheme = "https", Host = "amazon.com"
-            // This automatically drops everything after the third slash
             return $"{uriResult.Scheme}://{uriResult.Host}".ToLowerInvariant();
         }
 
-        // Fallback: If it's completely mangled, return a lowercase trimmed version of the raw string
         return rawUrl.Trim().ToLowerInvariant();
     }
 }
