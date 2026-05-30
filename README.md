@@ -42,6 +42,18 @@ Example configuration layout:
 
 ---
 
+## 🚀 Standard Operational Workflow
+
+To execute the stateless generation loop on fresh vault data, follow these steps sequentially:
+
+1. **Export from 1Password**: Open 1Password and export your active vault items as a `.csv` file.
+2. **Stage the File**: Save the exported file directly into your local database workspace:
+   `C:\Users\you\Documents\SecretKey\`
+3. **Rename the Input**: Rename the exported file explicitly to **`import.csv`** to match the application engine routing.
+4. **Execute via CLI**: Open your terminal window (or run natively via your Visual Studio profile launch configurations) and fire the utility with your active 4-digit processing DateCode argument:
+   ```shell
+   SecretKey.exe 2606
+
 ## 🏎️ Features & Robustness
 
 * **State Machine CSV Parser**: Built to handle complex real-world exports from 1Password. The parser tracks character states natively, meaning multi-line notes wrapped in double quotes (such as two-step authentication codes or custom comments) are preserved horizontally without corrupting adjacent database records.
