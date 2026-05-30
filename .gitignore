@@ -429,27 +429,3 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
-=======
-# Visual Studio / .NET
-.vs/
-bin/
-obj/
-*.user
-*.suo
-*.userosscache
-
-# Build outputs
-publish/
-
-# Rider
-.idea/
-
-# NuGet
-*.nupkg
-
-# Logs
-*.log
-
-# Project config
-config.json
->>>>>>> d37cb99 (Add .gitignore and config example; ignore config.json)
