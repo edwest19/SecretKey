@@ -12,9 +12,23 @@ internal partial class Program
 {
     static void Main(string[] args)
     {
-        string folder = AppDomain.CurrentDomain.BaseDirectory;
-        string configPath = Path.Combine(folder, "config.json");
+        // Default fallback to engine directory
+        string workingDirectory = AppContext.BaseDirectory;
 
+        // Capture the runtime arguments passed from the UI pipeline
+        if (args.Length >= 1)
+        {
+            string dateCode = args[0]; // Active runtime Date Code parameter
+        }
+
+        if (args.Length >= 2)
+        {
+            // Use the second parameter passed by the UI workspace field override
+            workingDirectory = args[1];
+        }
+
+        // Connect your path calculations directly to the designated working directory
+        string configPath = Path.Combine(workingDirectory, "config.json");
         if (File.Exists(configPath))
         {
             // Read the file content
@@ -65,9 +79,12 @@ internal partial class Program
         {
             Console.WriteLine("Error: config.json not found.");
         }
-
-        Console.WriteLine("\nPress any key to exit...");
-        Console.ReadKey();
+        // Only pause if a real user is interacting with a standard console window
+        if (!Console.IsInputRedirected)
+        {
+            Console.WriteLine("Press any key to exit...");
+            Console.ReadKey();
+        }
     }
 }
 
