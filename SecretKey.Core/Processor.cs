@@ -30,6 +30,7 @@ public static class Processor
                 break;
             }
         }
+        System.Diagnostics.Debug.WriteLine($"Processor: detected header columns=[{string.Join(",", header)}], passwordIndex={passwordIndex}");
 
         var outLines = new List<string>();
         outLines.Add("Title,Url,Username,Password");
@@ -75,8 +76,10 @@ public static class Processor
             {
                 // create a timestamped backup of the original input
                 string backupPath = inputPath + ".bak." + DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+                System.Diagnostics.Debug.WriteLine($"Processor: sanitizing input file. backup={backupPath}");
                 File.Copy(inputPath, backupPath, overwrite: true);
                 File.WriteAllLines(inputPath, lines);
+                System.Diagnostics.Debug.WriteLine($"Processor: wrote sanitized input to {inputPath}");
             }
             catch (Exception ex)
             {
