@@ -428,4 +428,27 @@ FodyWeavers.xsd
 *.msi
 *.msix
 *.msm
+
+# Repository-specific build and local files
+# Per-project build outputs
+/SecretKey/bin/
+/SecretKey/obj/
+/SecretKey.Core/bin/
+/SecretKey.Core/obj/
+SecretKeyUI/bin/
+SecretKeyUI/obj/
+
+# Local config and secrets
+config.json
+config.development.json
+secrets.json
+appsettings.Development.json
+*.UserSecrets.json
+
+# Logs and diagnostic output
+*.log
+Logs/
+
+# Rider/IDE folders
+.idea/
 *.msp
