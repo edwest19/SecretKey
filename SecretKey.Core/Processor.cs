@@ -77,6 +77,16 @@ public static class Processor
                 System.Diagnostics.Debug.WriteLine($"Processor: sanitizing input file in-place: {inputPath}");
                 File.WriteAllLines(inputPath, lines);
                 System.Diagnostics.Debug.WriteLine($"Processor: wrote sanitized input to {inputPath}");
+                try
+                {
+                    // log a minimal, non-sensitive event to the workspace
+                    var workspaceDir = Path.GetDirectoryName(inputPath) ?? AppContext.BaseDirectory;
+                    Logger.LogSanitization(workspaceDir, outputPath, Math.Max(0, outLines.Count - 1));
+                }
+                catch
+                {
+                    // swallow logging errors
+                }
             }
             catch (Exception ex)
             {
