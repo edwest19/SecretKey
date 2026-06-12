@@ -69,15 +69,12 @@ public static class Processor
         // Write output vault
         File.WriteAllLines(outputPath, outLines);
 
-        // If we sanitized the input (blanked a Password column), overwrite the input file with a backup
+        // If we sanitized the input (blanked a Password column), overwrite the input file in-place
         if (passwordIndex >= 0)
         {
             try
             {
-                // create a timestamped backup of the original input
-                string backupPath = inputPath + ".bak." + DateTime.UtcNow.ToString("yyyyMMddHHmmss");
-                System.Diagnostics.Debug.WriteLine($"Processor: sanitizing input file. backup={backupPath}");
-                File.Copy(inputPath, backupPath, overwrite: true);
+                System.Diagnostics.Debug.WriteLine($"Processor: sanitizing input file in-place: {inputPath}");
                 File.WriteAllLines(inputPath, lines);
                 System.Diagnostics.Debug.WriteLine($"Processor: wrote sanitized input to {inputPath}");
             }
