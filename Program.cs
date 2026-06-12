@@ -7,6 +7,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using SecretKey.Core;
 
 internal partial class Program
 {
