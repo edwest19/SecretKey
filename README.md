@@ -31,8 +31,8 @@ Example configuration layout:
 
 {
   "RootKey": "your 32 btye hex key here",
-  "InputPath": "C:\\Users\\Ed\\Documents\\SecretKey\\input.csv",
-  "OutputPath": "C:\\Users\\Ed\\Documents\\SecretKey\\output.csv",
+	"InputPath": "sample_input.csv",
+  "OutputPath": "output.csv",
   "PasswordMask": "XxxxxNSxxxNN"
 }
 
