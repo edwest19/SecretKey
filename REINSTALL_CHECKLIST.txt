@@ -1,0 +1,75 @@
+REINSTALL WINDOWS 11 - Developer Backup & Restore Checklist
+
+BEFORE REINSTALL (MANDATORY)
+1) Push all git work to remote
+   - git add -A
+   - git commit -m "WIP backup"
+   - git push --all origin
+   - git push --tags origin
+
+2) Create a local bundle (optional if you have unpushed branches)
+   - git bundle create secretkey.bundle --all
+   - copy secretkey.bundle to external drive
+
+3) Copy entire repos folder to external drive
+   - Copy: C:\Users\Ed\source\repos (or specific project folders)
+
+4) Backup SSH keys & Git config
+   - copy %USERPROFILE%\.ssh
+   - copy %USERPROFILE%\.gitconfig
+
+5) Backup Visual Studio settings & list workloads
+   - In VS: Tools → Import and Export Settings → Export selected settings
+   - Note VS workloads (screenshot or run vswhere)
+
+6) Export SDKs and installed apps
+   - dotnet --list-sdks > dotnet-sdks.txt
+   - dotnet --list-runtimes > dotnet-runtimes.txt
+   - winget export -o packages-windows.json
+
+7) Save secrets, certificates, and local config
+   - copy any .pfx, cert stores exports, local config.json to encrypted external storage
+   - DO NOT commit secrets to git
+
+8) (Optional) copy %USERPROFILE%\.nuget\packages if you need offline packages
+
+REINSTALL STEPS
+1) Reinstall Windows 11 and apply updates
+2) Install Git (latest)
+3) Install .NET SDK versions from dotnet-sdks.txt (from https://dotnet.microsoft.com)
+4) Install Visual Studio 2026 Community and required workloads:
+   - .NET desktop development
+   - "Universal Windows Platform development" and Windows 10 SDK only if you need WinUI
+   - Optional: ASP.NET/ web development, workload matching earlier export
+5) Restore SSH keys and .gitconfig (set permissions to user-only)
+6) Clone repositories or restore bundle
+   - git clone https://github.com/edwest19/SecretKey.git
+   - OR git clone <path-to-bundle> then git fetch bundle
+7) Restore VS settings (Tools → Import and Export Settings → Import)
+8) Open solution in Visual Studio, allow missing component prompts to install
+9) dotnet restore
+10) dotnet build (or build in Visual Studio)
+11) Recreate local config.json from secure backup (or create new RootKey)
+
+AFTER RESTORE (verify)
+- Confirm git remotes and branches are present
+- Run unit tests and sample runs; check outputs
+- Ensure secretkey_events.log (or other logs) are created only for sanitized files
+
+SECURITY NOTES
+- Never store unencrypted secrets in the repo.
+- Keep backups of private keys in encrypted storage.
+- If you suspect password exposure, rotate affected credentials.
+
+QUICK COMMANDS (PowerShell)
+- Backup push:
+  git add -A; git commit -m "backup before reinstall"; git push --all origin; git push --tags origin
+- Create bundle:
+  git bundle create secretkey.bundle --all
+- Export SDKs:
+  dotnet --list-sdks > dotnet-sdks.txt
+  dotnet --list-runtimes > dotnet-runtimes.txt
+- Export apps (if winget installed):
+  winget export -o packages-windows.json
+
+If you want, I can create the git bundle for you now and copy it into the repo root for download.
