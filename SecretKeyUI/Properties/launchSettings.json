@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "SecretKeyUI (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "SecretKeyUI (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
