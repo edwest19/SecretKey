@@ -1,0 +1,5 @@
+Title,Url,Username,Password,OTPAuth,Favorite,Archived,Tags,Notes
+Bhphotovideo,https://www.bhphotovideo.com,email@sample.com,,,false,false,Shopping,
+Paramount+,paramountplus.com,email@yahoo.com,,,false,false,TV,
+Solterra,,email@sample.com,,,false,false,,passwordmask=xxxxxxxxNNNN
+MTA eTix,https://www.mta.info/,email@sample.com,,,false,false,Travel,
