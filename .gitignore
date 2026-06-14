@@ -265,6 +265,7 @@ ClientBin/
 *.dbmdl
 *.dbproj.schemaview
 *.jfm
+
 # Certificate private keys (PFX) - keep signing keys out of source control.
 # Add any local test signing .pfx files here so they are ignored by Git.
 *.pfx
@@ -329,14 +330,9 @@ node_modules/
 *.dsw
 *.dsp
 
-# Visual Studio 6 technical files
-*.ncb
-*.aps
-
 # Visual Studio LightSwitch build output
 **/*.HTMLClient/GeneratedArtifacts
 **/*.DesktopClient/GeneratedArtifacts
-**/*.DesktopClient/ModelManifest.xml
 **/*.Server/GeneratedArtifacts
 **/*.Server/ModelManifest.xml
 _Pvt_Extensions
@@ -351,25 +347,13 @@ paket-files/
 # CodeRush personal settings
 **/.cr/personal
 
-# Python Tools for Visual Studio (PTVS)
-**/__pycache__/
-*.pyc
-
-# Cake - Uncomment if you are using it
-#tools/**
-#!tools/packages.config
-
-# Tabs Studio
-*.tss
-
 # Telerik's JustMock configuration file
 *.jmconfig
 
 # BizTalk build output
-*.btp.cs
-*.btm.cs
-*.odx.cs
-*.xsd.cs
+**/*.HTMLClient/GeneratedArtifacts
+**/*.DesktopClient/GeneratedArtifacts
+**/*.Server/GeneratedArtifacts
 
 # OpenCover UI analysis results
 OpenCover/
@@ -400,57 +384,3 @@ MSBuild_Logs/
 healthchecksdb
 
 # Ignore project config
-config.json
-
-# Backup folder for Package Reference Convert tool in Visual Studio 2017
-MigrationBackup/
-
-# Ionide (cross platform F# VS Code tools) working folder
-**/.ionide/
-
-# Fody - auto-generated XML schema
-FodyWeavers.xsd
-
-# VS Code files for those working on multiple tools
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
-
-# Local History for Visual Studio Code
-.history/
-
-# Built Visual Studio Code Extensions
-*.vsix
-
-# Windows Installer files from build outputs
-*.cab
-*.msi
-*.msix
-*.msm
-
-# Repository-specific build and local files
-# Per-project build outputs
-/SecretKey/bin/
-/SecretKey/obj/
-/SecretKey.Core/bin/
-/SecretKey.Core/obj/
-SecretKeyUI/bin/
-SecretKeyUI/obj/
-
-# Local config and secrets
-config.json
-config.development.json
-secrets.json
-appsettings.Development.json
-*.UserSecrets.json
-
-# Logs and diagnostic output
-*.log
-Logs/
-
-# Rider/IDE folders
-.idea/
-*.msp
