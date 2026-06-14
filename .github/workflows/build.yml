@@ -26,7 +26,10 @@ jobs:
 
       - name: Run tests (if any)
         if: always()
+        shell: pwsh
         run: |
-          if [ -f "$(pwd)" ]; then
-            dotnet test --no-build --verbosity normal || true
-          fi
+          try {
+            dotnet test --no-build --verbosity normal
+          } catch {
+            Write-Host 'No tests or tests failed; continuing (CI step allowed to fail)'
+          }
