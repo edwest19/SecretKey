@@ -14,22 +14,21 @@ public static class Processor
         var lines = File.ReadAllLines(inputPath);
         if (lines.Length == 0) return;
 
-        // Detect if the input CSV contains a Password column that must be sanitized
-        var header = lines[0].Split(',');
+        var header = ParseCsvLine(lines[0]);
         int passwordIndex = -1;
-        for (int h = 0; h < header.Length; h++)
+        for (int h = 0; h < header.Count; h++)
         {
-            // Trim whitespace, surrounding quotes, and possible BOM from the first header field
             string col = header[h] ?? string.Empty;
+            if (h == 0) col = col.TrimStart('\uFEFF');
             col = col.Trim();
             col = col.Trim('"', '\'');
-            if (h == 0) col = col.TrimStart('\uFEFF');
             if (string.Equals(col, "password", StringComparison.OrdinalIgnoreCase))
             {
                 passwordIndex = h;
                 break;
             }
         }
+
         System.Diagnostics.Debug.WriteLine($"Processor: detected header columns=[{string.Join(",", header)}], passwordIndex={passwordIndex}");
 
         var outLines = new List<string>();
@@ -37,14 +36,13 @@ public static class Processor
 
         for (int i = 1; i < lines.Length; i++)
         {
-            var parts = lines[i].Split(',');
-            if (parts.Length < 3) continue;
-            string title = parts[0].Trim();
-            string url = parts[1].Trim();
-            string username = parts[2].Trim();
+            var parts = ParseCsvLine(lines[i]);
+            if (parts.Count < 3) continue;
+            string title = parts.Count > 0 ? parts[0].Trim() : string.Empty;
+            string url = parts.Count > 1 ? parts[1].Trim() : string.Empty;
+            string username = parts.Count > 2 ? parts[2].Trim() : string.Empty;
 
-            // simple normalization
-            if (!url.StartsWith("http", StringComparison.OrdinalIgnoreCase)) url = "https://" + url;
+            if (!url.StartsWith("http", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(url)) url = "https://" + url;
 
             var block = new byte[32];
             var bytes = Encoding.UTF8.GetBytes((title + url + username));
@@ -53,23 +51,19 @@ public static class Processor
             var hash = Crypto.HmacSha256(monthlyMasterKey, block);
             var password = Crypto.MapBlobToPattern(hash, passwordMask);
 
-            outLines.Add($"{title},{url},{username},{password}");
+            outLines.Add(JoinCsvLine(new[] { title, url, username, password }));
 
-            // If input had a Password column, blank it out for this row in the sanitized input copy
             if (passwordIndex >= 0)
             {
-                var partsList = new System.Collections.Generic.List<string>(parts);
-                // Ensure the list has at least as many columns as the header
-                while (partsList.Count < header.Length) partsList.Add(string.Empty);
+                var partsList = new List<string>(parts);
+                while (partsList.Count < header.Count) partsList.Add(string.Empty);
                 partsList[passwordIndex] = string.Empty;
-                lines[i] = string.Join(',', partsList);
+                lines[i] = JoinCsvLine(partsList);
             }
         }
 
-        // Write output vault
         File.WriteAllLines(outputPath, outLines);
 
-        // If we sanitized the input (blanked a Password column), overwrite the input file in-place
         if (passwordIndex >= 0)
         {
             try
@@ -79,13 +73,11 @@ public static class Processor
                 System.Diagnostics.Debug.WriteLine($"Processor: wrote sanitized input to {inputPath}");
                 try
                 {
-                    // log a minimal, non-sensitive event to the workspace
                     var workspaceDir = Path.GetDirectoryName(inputPath) ?? AppContext.BaseDirectory;
                     Logger.LogSanitization(workspaceDir, outputPath, Math.Max(0, outLines.Count - 1));
                 }
                 catch
                 {
-                    // swallow logging errors
                 }
             }
             catch (Exception ex)
@@ -93,7 +85,83 @@ public static class Processor
                 System.Diagnostics.Debug.WriteLine($"Failed to sanitize input file {inputPath}: {ex}");
             }
         }
+    }
 
+    // Minimal RFC-style CSV parser for single-line records (handles quoted fields and escaped quotes)
+    private static List<string> ParseCsvLine(string line)
+    {
+        var fields = new List<string>();
+        if (line == null) return fields;
 
+        int i = 0;
+        int len = line.Length;
+        while (i < len)
+        {
+            if (line[i] == '\"')
+            {
+                i++; // skip opening quote
+                var sb = new StringBuilder();
+                while (i < len)
+                {
+                    if (line[i] == '\"')
+                    {
+                        if (i + 1 < len && line[i + 1] == '\"')
+                        {
+                            sb.Append('\"');
+                            i += 2; // escaped quote
+                            continue;
+                        }
+                        else
+                        {
+                            i++; // closing quote
+                            break;
+                        }
+                    }
+                    sb.Append(line[i]);
+                    i++;
+                }
+                // skip optional spaces after closing quote
+                while (i < len && line[i] != ',') i = (line[i] == ' ') ? i + 1 : i;
+                if (i < len && line[i] == ',') i++; // skip comma
+                fields.Add(sb.ToString());
+            }
+            else
+            {
+                var sb = new StringBuilder();
+                while (i < len && line[i] != ',')
+                {
+                    sb.Append(line[i]);
+                    i++;
+                }
+                if (i < len && line[i] == ',') i++; // skip comma
+                fields.Add(sb.ToString().Trim());
+            }
+        }
+
+        // Handle trailing empty field (line ending with comma)
+        if (line.EndsWith(",")) fields.Add(string.Empty);
+
+        return fields;
+    }
+
+    private static string JoinCsvLine(IEnumerable<string> fields)
+    {
+        var first = true;
+        var sb = new StringBuilder();
+        foreach (var f in fields)
+        {
+            if (!first) sb.Append(',');
+            first = false;
+            var val = f ?? string.Empty;
+            bool needsQuote = val.Contains(',') || val.Contains('\"') || val.Contains('\n') || val.Contains('\r') || val.StartsWith(" ") || val.EndsWith(" ");
+            if (needsQuote)
+            {
+                sb.Append('\"');
+                sb.Append(val.Replace("\"", "\"\""));
+                sb.Append('\"');
+            }
+            else sb.Append(val);
+        }
+        return sb.ToString();
     }
 }
