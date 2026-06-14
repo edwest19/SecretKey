@@ -1,6 +1,0 @@
-{
-  "RootKey": "REPLACE_WITH_YOUR_ROOT_KEY",
-  "InputPath": "sample_input.csv",
-  "OutputPath": "output.csv",
-  "PasswordMask": "XxxxxNSxxxNN"
-}
