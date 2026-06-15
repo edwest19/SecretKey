@@ -7,7 +7,8 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Build the solution on Windows because SecretKeyUI is a WinUI Windows-targeted project
+    runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -25,7 +26,10 @@ jobs:
 
       - name: Run tests (if any)
         if: always()
+        shell: pwsh
         run: |
-          if [ -f "$(pwd)" ]; then
-            dotnet test --no-build --verbosity normal || true
-          fi
+          try {
+            dotnet test --no-build --verbosity normal
+          } catch {
+            Write-Host 'No tests or tests failed; continuing (CI step allowed to fail)'
+          }
