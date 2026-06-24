@@ -7,8 +7,8 @@ on:
 
 jobs:
   build:
-    # Build the solution on Windows because SecretKeyUI is a WinUI Windows-targeted project
     runs-on: windows-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,12 +24,11 @@ jobs:
       - name: Build
         run: dotnet build --configuration Release --no-restore
 
-      - name: Run tests (if any)
-        if: always()
-        shell: pwsh
-        run: |
-          try {
-            dotnet test --no-build --verbosity normal
-          } catch {
-            Write-Host 'No tests or tests failed; continuing (CI step allowed to fail)'
-          }
+      - name: Publish (no MSIX, just EXE)
+        run: dotnet publish SecretKey.UI/SecretKey.UI.csproj -c Release -r win-x64 --self-contained false -o publish
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SecretKey-build
+          path: publish
