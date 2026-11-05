@@ -66,15 +66,22 @@ internal partial class Program
             Console.WriteLine($"Root Key:    {rootPreview}");
             Console.WriteLine("--------------------------------");
 
-            // Derive Monthly Master Key
-            var masterKey = Crypto.DeriveMonthlyMasterKey(config?.RootKey ?? string.Empty, dateCode);
+            try
+            {
+                // Derive Monthly Master Key
+                var masterKey = Crypto.DeriveMonthlyMasterKey(config?.RootKey ?? string.Empty, dateCode);
 
-            // Run processor with configurable mask/length from config
-            Processor.Process(
-                config?.InputPath ?? string.Empty, 
-                config?.OutputPath ?? string.Empty, 
-                masterKey, 
-                config?.PasswordMask ?? "XxxxxNSxxxNN");
+                // Run processor with configurable mask/length from config
+                Processor.Process(
+                    config?.InputPath ?? string.Empty,
+                    config?.OutputPath ?? string.Empty,
+                    masterKey,
+                    config?.PasswordMask ?? "XxxxxNSxxxNN");
+            }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+            }
         }
         else
         {

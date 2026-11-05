@@ -1,57 +1,72 @@
-using System.Text;
 using SecretKey.Core;
+using static SecretKey.Core.Tests.TestHelper;
 
 namespace SecretKey.Core.Tests;
 
 /// <summary>
-/// Known-answer tests for the building blocks in Crypto.cs.
-/// If any of these fail, previously generated passwords can no longer be reproduced.
+/// Tests for the building blocks of the password math (docs/password-derivation.md).
 /// </summary>
 public class CryptoTests
 {
     [Fact]
-    public void MonthlyMasterKey_IsSha256OfRootKeyTextPlusDateCode()
+    public void MonthlyKey_IsKnownValue()
     {
-        byte[] key = Crypto.DeriveMonthlyMasterKey(V1TestHelper.TestRootKey, "2611");
-
-        Assert.Equal("4E0F0B5B77491DCA67A584A58EC1F6D4859775346265F8C03B51878FE2CF8A12", Convert.ToHexString(key));
+        Assert.Equal("D38F4A15A5783BA78B9A80FF2D2AA0FA8086E6AB88D33C9A20206978658A3BB6", Convert.ToHexString(MonthlyKey("2611")));
+        Assert.Equal("A516AF24CE369E121466A7FD928EC7170CC44590FC6DAAC0E1B77DFD326C9702", Convert.ToHexString(MonthlyKey("2612")));
     }
 
     [Fact]
-    public void HmacSha256_MatchesRfc4231TestCase2()
+    public void RootKey_IgnoresLetterCaseAndSurroundingSpaces()
     {
-        byte[] mac = Crypto.HmacSha256(Encoding.ASCII.GetBytes("Jefe"), Encoding.ASCII.GetBytes("what do ya want for nothing?"));
+        byte[] expected = MonthlyKey("2611");
 
-        Assert.Equal("5BDCC146BF60754E6A042426089575C75A003F089D2739839DEC58B964EC3843", Convert.ToHexString(mac));
+        Assert.Equal(expected, Crypto.DeriveMonthlyMasterKey(TestRootKey.ToLowerInvariant(), "2611"));
+        Assert.Equal(expected, Crypto.DeriveMonthlyMasterKey("  " + TestRootKey + "\n", "2611"));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("REPLACE_WITH_YOUR_ROOT_KEY")]
+    [InlineData("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1")]    // 63 characters
+    [InlineData("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F00")]  // 66 characters
+    [InlineData("G00102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F")]    // not hexadecimal
+    public void RootKey_ThatIsNot32HexBytes_IsRejected(string badKey)
+    {
+        Assert.Throws<ArgumentException>(() => Crypto.DeriveMonthlyMasterKey(badKey, "2611"));
     }
 
     [Fact]
-    public void HmacSha256_OfAccountBlock_IsStable()
+    public void EncodeFields_WritesBigEndianLengthThenUtf8()
     {
-        byte[] key = Crypto.DeriveMonthlyMasterKey(V1TestHelper.TestRootKey, "2611");
-        var block = new byte[32]; // v1: title + url + username, UTF-8, cut or zero-padded to 32 bytes
-        byte[] text = Encoding.UTF8.GetBytes("Bank" + "https://bank.example" + "ed");
-        Array.Copy(text, block, text.Length);
+        Assert.Equal(
+            new byte[] { 0, 0, 0, 1, (byte)'a', 0, 0, 0, 0, 0, 0, 0, 2, 0xC3, 0xA9 },
+            Crypto.EncodeFields("a", "", "é"));
+    }
 
-        Assert.Equal("0F803F563CA1F44777139CCC4BB04B81DA0373509D3D28FC76E896BB234AD5C9", Convert.ToHexString(Crypto.HmacSha256(key, block)));
+    [Theory]
+    [InlineData("X", new byte[] { 234, 255, 0 }, "A")]    // 234 and 255 are skipped for 26-letter sets
+    [InlineData("x", new byte[] { 233 }, "z")]            // 233 is the highest accepted byte: 233 mod 26 = 25
+    [InlineData("N", new byte[] { 250, 249 }, "9")]       // digits accept bytes below 250
+    [InlineData("S", new byte[] { 240, 239 }, "?")]       // symbols accept bytes below 240
+    [InlineData("X-x.N", new byte[] { 0, 1, 2 }, "A-b.2")] // other characters are copied and use no bytes
+    public void MapStreamToMask_SkipsBiasedBytes(string mask, byte[] stream, string expected)
+    {
+        Assert.Equal(expected, Crypto.MapStreamToMask(stream, mask));
     }
 
     [Fact]
-    public void MapBlobToPattern_MapsEachMaskTokenFromOneHashByte()
+    public void MapStreamToMask_FailsLoudlyIfStreamRunsOut()
     {
-        byte[] bytes = Enumerable.Range(0, 32).Select(i => (byte)i).ToArray();
-
-        // X -> A-Z, x -> a-z, N -> 0-9, S -> "!@#$%&*()-_=+[]{}<>?", anything else is copied as-is.
-        // A literal still uses up a hash byte (v1 behavior).
-        Assert.Equal("Ab2$-Fg7)", Crypto.MapBlobToPattern(bytes, "XxNS-XxNS"));
+        Assert.Throws<InvalidOperationException>(() => Crypto.MapStreamToMask(new byte[] { 255 }, "x"));
     }
 
     [Fact]
-    public void MapBlobToPattern_WrapsAfter32Characters_V1Behavior()
+    public void NormalizeUrl_AddsHttpsOnlyWhenNoScheme()
     {
-        byte[] bytes = Enumerable.Range(0, 32).Select(i => (byte)i).ToArray();
-
-        // Known v1 weakness: mask positions 33+ reuse the same 32 hash bytes.
-        Assert.Equal("0123456789012345678901234567890101234567", Crypto.MapBlobToPattern(bytes, new string('N', 40)));
+        Assert.Equal("", Crypto.NormalizeUrl("  "));
+        Assert.Equal("https://paramountplus.com", Crypto.NormalizeUrl(" paramountplus.com "));
+        Assert.Equal("https://httpbin.org", Crypto.NormalizeUrl("httpbin.org"));
+        Assert.Equal("http://example.org", Crypto.NormalizeUrl("http://example.org"));
+        Assert.Equal("HTTPS://Example.com", Crypto.NormalizeUrl("HTTPS://Example.com"));
     }
 }
