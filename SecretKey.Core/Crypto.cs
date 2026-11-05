@@ -1,64 +1,169 @@
 using System;
+using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace SecretKey.Core;
 
+/// <summary>
+/// SecretKey password math, version 2. The exact specification is in docs/password-derivation.md.
+///
+/// Changing anything in this file changes users' passwords. The known-answer tests in
+/// SecretKey.Core.Tests must keep passing; a deliberate change must become a new version.
+/// </summary>
 public static class Crypto
 {
+    public const int RootKeyByteLength = 32;
+
+    private const string Upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private const string Lower = "abcdefghijklmnopqrstuvwxyz";
+    private const string Digits = "0123456789";
+    private const string Specials = "!@#$%&*()-_=+[]{}<>?";
+
+    private const string MonthlyKeyLabel = "SecretKey v2 monthly key ";
+    private const string PasswordLabel = "SecretKey v2 password";
+
+    /// <summary>
+    /// Derives the month's key: HKDF-SHA256 over the 32-byte root key, with the date code in the info.
+    /// </summary>
+    /// <param name="rootKey">The root key as 64 hexadecimal characters (either case; surrounding spaces ignored).</param>
+    /// <param name="dateCode">The date code, used exactly as given.</param>
     public static byte[] DeriveMonthlyMasterKey(string rootKey, string dateCode)
     {
-        if (rootKey == null) throw new ArgumentNullException(nameof(rootKey));
-        if (dateCode == null) throw new ArgumentNullException(nameof(dateCode));
+        ArgumentNullException.ThrowIfNull(rootKey);
+        ArgumentNullException.ThrowIfNull(dateCode);
 
-        string combined = rootKey + dateCode;
-        using var sha = SHA256.Create();
-        return sha.ComputeHash(Encoding.UTF8.GetBytes(combined));
-    }
-
-    public static byte[] HmacSha256(byte[] key, byte[] data)
-    {
-        using var hmac = new HMACSHA256(key);
-        return hmac.ComputeHash(data);
-    }
-
-    public static string MapBlobToPattern(byte[] hash, string mask)
-    {
-        if (hash == null) throw new ArgumentNullException(nameof(hash));
-        if (mask == null) throw new ArgumentNullException(nameof(mask));
-
-        ReadOnlySpan<char> upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".AsSpan();
-        ReadOnlySpan<char> lower = "abcdefghijklmnopqrstuvwxyz".AsSpan();
-        ReadOnlySpan<char> digits = "0123456789".AsSpan();
-        ReadOnlySpan<char> special = "!@#$%&*()-_=+[]{}<>?".AsSpan();
-
-        var result = new char[mask.Length];
-        int byteIndex = 0;
-        for (int i = 0; i < mask.Length; i++)
+        byte[] root = ParseRootKey(rootKey);
+        try
         {
-            byte b = hash[byteIndex % hash.Length];
-            char m = mask[i];
-            switch (m)
+            byte[] info = Encoding.UTF8.GetBytes(MonthlyKeyLabel + dateCode);
+            return HKDF.DeriveKey(HashAlgorithmName.SHA256, root, 32, Array.Empty<byte>(), info);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(root);
+        }
+    }
+
+    /// <summary>
+    /// Generates one account's password from the month's key, the account fields and the mask.
+    /// Fields are normalized first (see <see cref="NormalizeField"/> and <see cref="NormalizeUrl"/>).
+    /// </summary>
+    public static string GeneratePassword(byte[] monthlyKey, string title, string url, string username, string mask)
+    {
+        ArgumentNullException.ThrowIfNull(monthlyKey);
+        ArgumentNullException.ThrowIfNull(mask);
+
+        byte[] accountInput = EncodeFields(PasswordLabel, NormalizeField(title), NormalizeUrl(url), NormalizeField(username), mask);
+        return MapStreamToMask(PasswordStream(monthlyKey, accountInput), mask);
+    }
+
+    /// <summary>Removes surrounding whitespace and applies Unicode NFC normalization.</summary>
+    public static string NormalizeField(string? value) =>
+        (value ?? string.Empty).Trim().Normalize(NormalizationForm.FormC);
+
+    /// <summary>Normalizes like any field, then adds "https://" when a non-empty URL has no http:// or https:// prefix.</summary>
+    public static string NormalizeUrl(string? url)
+    {
+        string normalized = NormalizeField(url);
+        if (normalized.Length > 0
+            && !normalized.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            && !normalized.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            normalized = "https://" + normalized;
+        }
+        return normalized;
+    }
+
+    internal static byte[] ParseRootKey(string rootKey)
+    {
+        string hex = rootKey.Trim();
+        if (hex.Length != RootKeyByteLength * 2 || !hex.All(char.IsAsciiHexDigit))
+        {
+            throw new ArgumentException(
+                "The root key must be exactly 64 hexadecimal characters (a 32-byte key). Use \"Generate New Key\" to create one.");
+        }
+        return Convert.FromHexString(hex);
+    }
+
+    /// <summary>Writes each string as a 4-byte big-endian length followed by its UTF-8 bytes.</summary>
+    internal static byte[] EncodeFields(params string[] fields)
+    {
+        var output = new List<byte>();
+        Span<byte> length = stackalloc byte[4];
+        foreach (string field in fields)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(field);
+            BinaryPrimitives.WriteUInt32BigEndian(length, (uint)utf8.Length);
+            output.AddRange(length.ToArray());
+            output.AddRange(utf8);
+        }
+        return output.ToArray();
+    }
+
+    /// <summary>
+    /// An endless deterministic byte stream: HMAC-SHA256(monthlyKey, accountInput || counter) for counter = 0, 1, 2, ...
+    /// (counter as a 4-byte big-endian number), concatenated.
+    /// </summary>
+    internal static IEnumerable<byte> PasswordStream(byte[] monthlyKey, byte[] accountInput)
+    {
+        using var hmac = new HMACSHA256(monthlyKey);
+        byte[] block = new byte[accountInput.Length + 4];
+        accountInput.CopyTo(block, 0);
+
+        for (uint counter = 0; ; counter++)
+        {
+            BinaryPrimitives.WriteUInt32BigEndian(block.AsSpan(accountInput.Length), counter);
+            foreach (byte b in hmac.ComputeHash(block))
             {
-                case 'X':
-                    result[i] = upper[b % upper.Length];
-                    break;
-                case 'x':
-                    result[i] = lower[b % lower.Length];
-                    break;
-                case 'N':
-                    result[i] = digits[b % digits.Length];
-                    break;
-                case 'S':
-                    result[i] = special[b % special.Length];
-                    break;
-                default:
-                    result[i] = m;
-                    break;
+                yield return b;
             }
-            byteIndex++;
+        }
+    }
+
+    /// <summary>
+    /// Builds the password from the mask: X = A-Z, x = a-z, N = 0-9, S = one of "!@#$%&amp;*()-_=+[]{}&lt;&gt;?".
+    /// Each token takes the next stream byte that is below the largest multiple of its set size (others are skipped),
+    /// so every character in a set is equally likely. Any other mask character is copied as-is and uses no bytes.
+    /// </summary>
+    internal static string MapStreamToMask(IEnumerable<byte> stream, string mask)
+    {
+        var password = new StringBuilder(mask.Length);
+        using IEnumerator<byte> bytes = stream.GetEnumerator();
+
+        foreach (char token in mask)
+        {
+            string? set = token switch
+            {
+                'X' => Upper,
+                'x' => Lower,
+                'N' => Digits,
+                'S' => Specials,
+                _ => null,
+            };
+
+            if (set is null)
+            {
+                password.Append(token);
+                continue;
+            }
+
+            int limit = 256 - (256 % set.Length);
+            while (true)
+            {
+                if (!bytes.MoveNext())
+                {
+                    throw new InvalidOperationException("The password byte stream ended unexpectedly.");
+                }
+                if (bytes.Current < limit)
+                {
+                    password.Append(set[bytes.Current % set.Length]);
+                    break;
+                }
+            }
         }
 
-        return new string(result);
+        return password.ToString();
     }
 }

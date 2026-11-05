@@ -3,11 +3,11 @@ using SecretKey.Core;
 namespace SecretKey.Core.Tests;
 
 /// <summary>
-/// Shared setup for the v1 known-answer tests.
-/// Every expected value in this project was produced by the v1.0.0 engine and
-/// cross-checked against an independent implementation of the same algorithm.
+/// Shared setup for the password tests.
+/// Every expected password in this project was produced by the engine and independently
+/// re-computed from docs/password-derivation.md by a separate implementation.
 /// </summary>
-internal static class V1TestHelper
+internal static class TestHelper
 {
     // TEST-ONLY root key. Never use this for real passwords.
     public const string TestRootKey = "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F";
@@ -17,6 +17,12 @@ internal static class V1TestHelper
 
     public const string InputHeader = "Title,Url,Username,Password,OTPAuth,Favorite,Archived,Tags,Notes";
     public const string OutputHeader = "Title,Url,Username,Password";
+
+    public static byte[] MonthlyKey(string dateCode = DateCode) =>
+        Crypto.DeriveMonthlyMasterKey(TestRootKey, dateCode);
+
+    public static string Password(string title, string url, string username, string mask = DefaultMask, string dateCode = DateCode) =>
+        Crypto.GeneratePassword(MonthlyKey(dateCode), title, url, username, mask);
 
     /// <summary>Builds an unquoted input row in the 1Password-style column order the engine reads.</summary>
     public static string Row(string title, string url, string username) =>
@@ -36,7 +42,7 @@ internal static class V1TestHelper
             string output = Path.Combine(dir, "output.csv");
             File.WriteAllLines(input, new[] { InputHeader }.Concat(inputRows));
 
-            Processor.Process(input, output, Crypto.DeriveMonthlyMasterKey(TestRootKey, dateCode), mask);
+            Processor.Process(input, output, MonthlyKey(dateCode), mask);
 
             return File.ReadAllLines(output);
         }
@@ -44,14 +50,5 @@ internal static class V1TestHelper
         {
             Directory.Delete(dir, recursive: true);
         }
-    }
-
-    /// <summary>Runs one account through the engine and returns its output line.</summary>
-    public static string OutputLineFor(string title, string url, string username, string mask = DefaultMask, string dateCode = DateCode)
-    {
-        string[] lines = Run(new[] { Row(title, url, username) }, mask, dateCode);
-        Assert.Equal(2, lines.Length);
-        Assert.Equal(OutputHeader, lines[0]);
-        return lines[1];
     }
 }

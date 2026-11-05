@@ -38,18 +38,11 @@ public static class Processor
         {
             var parts = ParseCsvLine(lines[i]);
             if (parts.Count < 3) continue;
-            string title = parts.Count > 0 ? parts[0].Trim() : string.Empty;
-            string url = parts.Count > 1 ? parts[1].Trim() : string.Empty;
-            string username = parts.Count > 2 ? parts[2].Trim() : string.Empty;
+            string title = Crypto.NormalizeField(parts[0]);
+            string url = Crypto.NormalizeUrl(parts[1]);
+            string username = Crypto.NormalizeField(parts[2]);
 
-            if (!url.StartsWith("http", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(url)) url = "https://" + url;
-
-            var block = new byte[32];
-            var bytes = Encoding.UTF8.GetBytes((title + url + username));
-            Array.Copy(bytes, block, Math.Min(bytes.Length, block.Length));
-
-            var hash = Crypto.HmacSha256(monthlyMasterKey, block);
-            var password = Crypto.MapBlobToPattern(hash, passwordMask);
+            var password = Crypto.GeneratePassword(monthlyMasterKey, title, url, username, passwordMask);
 
             outLines.Add(JoinCsvLine(new[] { title, url, username, password }));
 
