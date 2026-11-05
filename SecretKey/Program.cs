@@ -3,6 +3,9 @@
 // ============================================================================
 // Copyright (c) 2026 edwest19
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
+// AI-GENERATED CODE (partial): Claude (Anthropic) added the error handling around
+// the password engine call in Main. SecretKey is a project built with AI-generated
+// code; see README.md.
 // ============================================================================
 using System;
 using System.IO;
@@ -66,6 +69,7 @@ internal partial class Program
             Console.WriteLine($"Root Key:    {rootPreview}");
             Console.WriteLine("--------------------------------");
 
+            // AI-generated (Claude): report a bad root key clearly instead of crashing.
             try
             {
                 // Derive Monthly Master Key

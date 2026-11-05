@@ -1,3 +1,8 @@
+// ============================================================================
+// Copyright (c) 2026 edwest19. Licensed under the MIT License (see LICENSE).
+// AI-GENERATED CODE: This file was written by Claude (Anthropic).
+// SecretKey is a project built with AI-generated code; see README.md.
+// ============================================================================
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;

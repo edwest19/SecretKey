@@ -1,5 +1,22 @@
 # SecretKey
 
+## About this project
+
+<!-- AI-generated: this section was written by Claude (Anthropic). -->
+
+- **Built with AI-generated code.** The purpose of SecretKey is to build a real, useful app with AI-generated code. The code is written by AI coding assistants (Claude by Anthropic, and earlier GitHub Copilot). A human, the repository owner, reviews every change and merges it through a pull request.
+  - Files Claude wrote or changed say so in a comment at the top of the file.
+  - Every commit Claude made ends with a `Co-Authored-By: Claude` line, so `git log` shows exactly which changes were AI-generated.
+- **Local only.** SecretKey runs on your PC. Its own code makes no network connections, and its app package asks for no network permissions. Tests check both (`RepositoryRulesTests`). GitHub is used only to store the code and to build releases.
+- **Pure .NET, Microsoft packages only.** No third-party packages. The only packages are Microsoft's own:
+  - the Windows App SDK and Windows SDK build tools, for the WinUI 3 window and MSIX packaging
+  - MSTest, Microsoft's test framework, used by the tests only
+
+  A test fails if any other package is added.
+- **Checkable by an AI.** [CLAUDE.md](CLAUDE.md) tells an AI assistant how to build, test, and check this README against the code.
+
+## Overview
+
 A deterministic, stateless password‑generation, recovery, and sharing tool built as a small Visual Studio solution (target: .NET 10).
 SecretKey derives passwords from a 1Password‑style .csv file using a secret key and a date code. No password database is required.
 

@@ -1,5 +1,7 @@
 # How SecretKey derives passwords (version 2)
 
+> AI-generated: this document was written by Claude (Anthropic). SecretKey is a project built with AI-generated code; see [README.md](../README.md).
+
 This is the exact recipe SecretKey uses. With it, anyone holding the root key and date code can regenerate the passwords, even without this app. The known-answer tests in `SecretKey.Core.Tests` lock it; a change to anything here must become a new version, never an edit to this one.
 
 ## Inputs

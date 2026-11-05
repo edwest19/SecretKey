@@ -5,8 +5,7 @@
   xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  xmlns:systemai="http://schemas.microsoft.com/appx/manifest/systemai/windows10"
-  IgnorableNamespaces="uap rescap systemai">
+  IgnorableNamespaces="uap rescap">
 
   <Identity
     Name="d3e8fa94-4e8c-4c91-a5d9-a3c738d9cd26"
@@ -47,7 +46,8 @@
   </Applications>
 
   <Capabilities>
+    <!-- Only runFullTrust: no network, device or AI capabilities (enforced by RepositoryRulesTests).
+         The unused systemAIModels capability was removed by Claude (Anthropic). -->
     <rescap:Capability Name="runFullTrust" />
-    <systemai:Capability Name="systemAIModels"/>
   </Capabilities>
 </Package>

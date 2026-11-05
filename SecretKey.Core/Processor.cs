@@ -1,3 +1,10 @@
+// ============================================================================
+// Copyright (c) 2026 edwest19. Licensed under the MIT License (see LICENSE).
+// AI-GENERATED CODE (partial): Claude (Anthropic) wrote the per-account password
+// step in Process (field normalization + Crypto.GeneratePassword). The rest of
+// this file predates Claude's work. SecretKey is a project built with
+// AI-generated code; see README.md.
+// ============================================================================
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -38,6 +45,8 @@ public static class Processor
         {
             var parts = ParseCsvLine(lines[i]);
             if (parts.Count < 3) continue;
+
+            // AI-generated (Claude): normalize the account fields and derive the password (docs/password-derivation.md).
             string title = Crypto.NormalizeField(parts[0]);
             string url = Crypto.NormalizeUrl(parts[1]);
             string username = Crypto.NormalizeField(parts[2]);
