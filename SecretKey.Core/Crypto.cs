@@ -21,23 +21,30 @@ public static class Crypto
 {
     public const int RootKeyByteLength = 32;
 
-    private const string Upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    private const string Lower = "abcdefghijklmnopqrstuvwxyz";
-    private const string Digits = "0123456789";
-    private const string Specials = "!@#$%&*()-_=+[]{}<>?";
+    // The character sets for the mask tokens X, x, N and S (docs/password-derivation.md, README.md).
+    public const string UppercaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    public const string LowercaseLetters = "abcdefghijklmnopqrstuvwxyz";
+    public const string Digits = "0123456789";
+    public const string Symbols = "!@#$%&*()-_=+[]{}<>?";
 
-    private const string MonthlyKeyLabel = "SecretKey v2 monthly key ";
-    private const string PasswordLabel = "SecretKey v2 password";
+    internal const string MonthlyKeyLabel = "SecretKey v2 monthly key ";
+    internal const string PasswordLabel = "SecretKey v2 password";
 
     /// <summary>
     /// Derives the month's key: HKDF-SHA256 over the 32-byte root key, with the date code in the info.
     /// </summary>
     /// <param name="rootKey">The root key as 64 hexadecimal characters (either case; surrounding spaces ignored).</param>
-    /// <param name="dateCode">The date code, used exactly as given.</param>
+    /// <param name="dateCode">The date code: 4 digits, YYMM, month 01 to 12.</param>
     public static byte[] DeriveMonthlyMasterKey(string rootKey, string dateCode)
     {
         ArgumentNullException.ThrowIfNull(rootKey);
         ArgumentNullException.ThrowIfNull(dateCode);
+
+        string? dateCodeError = Validation.DateCodeError(dateCode);
+        if (dateCodeError is not null)
+        {
+            throw new ArgumentException(dateCodeError);
+        }
 
         byte[] root = ParseRootKey(rootKey);
         try
@@ -83,13 +90,12 @@ public static class Crypto
 
     internal static byte[] ParseRootKey(string rootKey)
     {
-        string hex = rootKey.Trim();
-        if (hex.Length != RootKeyByteLength * 2 || !hex.All(char.IsAsciiHexDigit))
+        string? error = Validation.RootKeyError(rootKey);
+        if (error is not null)
         {
-            throw new ArgumentException(
-                "The root key must be exactly 64 hexadecimal characters (a 32-byte key). Use \"Generate New Key\" to create one.");
+            throw new ArgumentException(error);
         }
-        return Convert.FromHexString(hex);
+        return Convert.FromHexString(rootKey.Trim());
     }
 
     /// <summary>Writes each string as a 4-byte big-endian length followed by its UTF-8 bytes.</summary>
@@ -141,10 +147,10 @@ public static class Crypto
         {
             string? set = token switch
             {
-                'X' => Upper,
-                'x' => Lower,
+                'X' => UppercaseLetters,
+                'x' => LowercaseLetters,
                 'N' => Digits,
-                'S' => Specials,
+                'S' => Symbols,
                 _ => null,
             };
 

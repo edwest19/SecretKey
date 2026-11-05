@@ -45,11 +45,14 @@ The purpose of the project is to build a real app with AI-generated code. AI ass
 | Path | What it is |
 |---|---|
 | `SecretKey.Core/Crypto.cs` | Password math (spec: `docs/password-derivation.md`) |
-| `SecretKey.Core/Processor.cs` | Reads the input CSV, writes the output CSV |
+| `SecretKey.Core/Processor.cs` | `Run` and `Process`: input CSV to output CSV, `passwordmask=`, clearing old passwords |
+| `SecretKey.Core/Csv.cs` | CSV reader and writer (RFC 4180, multi-line fields) |
+| `SecretKey.Core/Validation.cs` | Checks for root key, date code and masks |
+| `SecretKey.Core/SecretKeyConfig.cs` | `config.json` settings, shared by both apps |
 | `SecretKey.Core/Logger.cs` | Local event log next to the input file |
 | `SecretKey/` | Command-line app |
-| `SecretKeyUI/` | WinUI 3 desktop app, packaged as MSIX |
-| `SecretKey.Core.Tests/` | MSTest tests: password math, CSV processing, repository rules |
+| `SecretKeyUI/` | WinUI 3 desktop app, packaged as MSIX (full trust) |
+| `SecretKey.Core.Tests/` | MSTest tests (see the claims map below) |
 | `docs/password-derivation.md` | Exact password recipe |
 | `.github/workflows/build.yml` | CI: tests and Windows build on every pull request |
 
@@ -72,17 +75,26 @@ The purpose of the project is to build a real app with AI-generated code. AI ass
 4. **Check the ground rules** above, including that every file an AI wrote or changed carries the header.
 5. **Report** each finding as: statement, evidence (file:line or test name), verdict (matches / differs / not implemented).
 
+## README claims map
+
+Where each README section is implemented and which tests prove it. `ReadmeClaimsTests` also checks the README's exact facts (symbol set, limits, column names, settings, default mask, spec table) against the code.
+
+| README section | Code | Tests |
+|---|---|---|
+| About this project: local only, Microsoft packages | `SecretKeyUI/Package.appxmanifest`, all `*.csproj` | `RepositoryRulesTests` |
+| Security: `.gitignore` | `.gitignore` | `ReadmeClaimsTests.GitIgnore_ExcludesTheSecretsTheReadmeSaysItDoes` |
+| Desktop app | `SecretKeyUI/MainWindow.xaml.cs` (calls `Validation`, `SecretKeyConfig`, `Processor.Run`) | Built by CI; same core code as the tests |
+| Command-line app | `SecretKey/Program.cs` (calls `Processor.Run`) | Built by CI; same core code as the tests |
+| Configuration | `SecretKeyConfig.cs`, `Processor.Run` | `ProcessorTests.Run_*`, `ProcessorTests.Config*`, `ReadmeClaimsTests.ConfigExample_*` |
+| Input file | `Csv.cs`, `Processor.Process` | `CsvTests`, `ProcessorTests` |
+| What happens to the input file | `Processor.Process` step 3, `Logger.cs` | `ProcessorTests.OldPasswords_*`, `ProcessorTests.InputWithoutPasswords_IsNotTouched` |
+| Output file | `Processor.Process` step 2, `Crypto.NormalizeField/NormalizeUrl` | `PasswordDerivationTests.Csv_*`, `ProcessorTests.Columns_*` |
+| Masks | `Validation.MaskError`, `Crypto.MapStreamToMask` | `ValidationTests`, `CryptoTests.MapStreamToMask_*` |
+| Per-account masks | `Processor.FindMaskInNotes` | `ProcessorTests.PasswordMask*`, `ProcessorTests.InvalidPasswordMaskInNotes_*` |
+| Date code | `Validation.DateCodeError`, `Crypto.DeriveMonthlyMasterKey` | `ValidationTests.*DateCodes*` |
+| What changes a password | `Crypto.GeneratePassword` | `PasswordDerivationTests` |
+| How passwords are made | `Crypto.cs` | `CryptoTests`, `PasswordDerivationTests`, `ReadmeClaimsTests.Spec_*` |
+
 ## Known gaps (README vs code)
 
-These README statements don't match the code yet. They're scheduled to be fixed in the next pull request. Remove each line here when it's fixed.
-
-- `passwordmask=` in the Notes column is documented but not implemented. Every account uses the global mask.
-- The README lists the columns as `title, username, password, url, notes`. The code reads the first three columns by position, as Title, Url, Username.
-- The README says an invalid mask falls back to the default with a warning. Masks aren't validated at all yet.
-- The README says `S` uses a "configured" symbol set. The set is fixed: `!@#$%&*()-_=+[]{}<>?`.
-- The README says the output keeps "the same entries". The output contains only Title, Url, Username and Password.
-- The README says to rename the export to `import.csv`. The code uses `InputPath` from `config.json`.
-- The README says the UI "hosts the console engine". The UI calls `SecretKey.Core` directly, in-process.
-- The README says the input file is "normalized". The code rewrites it in place with the Password column blanked, and multi-line quoted fields (such as notes) get mangled.
-- The README says the repository contains `package.pfx`. It doesn't, and never has.
-- The README calls the date code "something you know". It is a YYMM value, so anyone holding `config.json` can try recent months; it adds very little secrecy.
+None known. If you find one, list it here and fix it in the same pull request, or in the next one.
