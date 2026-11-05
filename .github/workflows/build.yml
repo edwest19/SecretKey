@@ -1,3 +1,6 @@
+# AI-GENERATED (partial): Claude (Anthropic) added the pull_request trigger, the
+# read-only permissions and the test job. SecretKey is a project built with
+# AI-generated code; see README.md.
 name: Build
 
 on:

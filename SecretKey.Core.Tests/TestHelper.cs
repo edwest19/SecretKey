@@ -1,3 +1,8 @@
+// ============================================================================
+// Copyright (c) 2026 edwest19. Licensed under the MIT License (see LICENSE).
+// AI-GENERATED CODE: This file was written by Claude (Anthropic).
+// SecretKey is a project built with AI-generated code; see README.md.
+// ============================================================================
 using SecretKey.Core;
 
 namespace SecretKey.Core.Tests;
@@ -50,5 +55,18 @@ internal static class TestHelper
         {
             Directory.Delete(dir, recursive: true);
         }
+    }
+
+    /// <summary>Finds the repository root (the folder containing SecretKey.slnx) from the test's output folder.</summary>
+    public static string RepoRoot()
+    {
+        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir != null; dir = dir.Parent)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "SecretKey.slnx")))
+            {
+                return dir.FullName;
+            }
+        }
+        throw new InvalidOperationException("Could not find SecretKey.slnx above " + AppContext.BaseDirectory);
     }
 }
