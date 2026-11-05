@@ -7,9 +7,9 @@ This is the exact recipe SecretKey uses. With it, anyone holding the root key an
 ## Inputs
 
 - **Root key**: 64 hexadecimal characters (upper or lower case), decoded to 32 bytes. Surrounding whitespace is ignored. Anything else is rejected.
-- **Date code**: a string such as `2611`, used exactly as given.
+- **Date code**: 4 digits, `YYMM`, with a month from 01 to 12 (such as `2611`). Anything else is rejected.
 - **Per account**: Title, URL and Username from the input CSV.
-- **Mask**: the password pattern, e.g. `XxxxxNSxxxNN`.
+- **Mask**: the password pattern, e.g. `XxxxxNSxxxNN`. The account's own `passwordmask=` mask is used if it has one, otherwise the global mask. The apps only accept masks that follow the rules in the README ("Masks").
 
 ## Step 1: monthly key
 

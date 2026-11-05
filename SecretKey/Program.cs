@@ -1,110 +1,76 @@
-﻿// AI Assistant Acknowledgement: This file was created or modified with assistance from an AI programming assistant named "GitHub Copilot".
-// Review generated code before use and treat any embedded secrets appropriately.
+﻿// ============================================================================
+// Copyright (c) 2026 edwest19. Licensed under the MIT License (see LICENSE).
+// AI-GENERATED CODE: This file was written by Claude (Anthropic), replacing an
+// earlier version created with GitHub Copilot. SecretKey is a project built with
+// AI-generated code; see README.md.
 // ============================================================================
-// Copyright (c) 2026 edwest19
-// Licensed under the MIT License. See LICENSE file in the project root for full license information.
-// AI-GENERATED CODE (partial): Claude (Anthropic) added the error handling around
-// the password engine call in Main. SecretKey is a project built with AI-generated
-// code; see README.md.
-// ============================================================================
-using System;
-using System.IO;
-using System.Text.Json;
 using SecretKey.Core;
 
-internal partial class Program
+/// <summary>
+/// Command-line app (README.md "Command-line app"):
+///   SecretKey &lt;YYMM&gt; [workspace folder]
+/// Reads config.json from the workspace folder (default: the folder this program is in).
+/// Exit code 0 on success, 1 on any error.
+/// </summary>
+internal static class Program
 {
-    static void Main(string[] args)
+    private static int Main(string[] args)
     {
-        // Default fallback to engine directory
-        string workingDirectory = AppContext.BaseDirectory;
+        int exitCode = Run(args);
 
-        // Capture the runtime arguments passed from the UI pipeline
-        if (args.Length >= 1)
-        {
-            string dateCode = args[0]; // Active runtime Date Code parameter
-        }
-
-        if (args.Length >= 2)
-        {
-            // Use the second parameter passed by the UI workspace field override
-            workingDirectory = args[1];
-        }
-
-        // Connect your path calculations directly to the designated working directory
-        string configPath = Path.Combine(workingDirectory, "config.json");
-        if (File.Exists(configPath))
-        {
-            // Read the file content
-            string jsonString = File.ReadAllText(configPath);
-
-            // Deserialize into a dynamic object or a specific class
-            var config = JsonSerializer.Deserialize<ConfigData>(jsonString);
-
-            // Validate args: expect DateCode as args[0] in YYMM
-            if (args.Length == 0)
-            {
-                Console.WriteLine("Error: DateCode argument required (YYMM). Example: 2605");
-                return;
-            }
-
-            string dateCode = args[0];
-            if (dateCode.Length != 4 || !int.TryParse(dateCode, out _))
-            {
-                Console.WriteLine("Error: DateCode must be a 4-digit YYMM string.");
-                return;
-            }
-
-            // Print header showing the date code
-            Console.WriteLine("======================================");
-            Console.WriteLine($"   DateCode: {dateCode}");
-            Console.WriteLine("======================================");
-
-            // Print the results
-            Console.WriteLine("--- Secret Key Configuration ---");
-            Console.WriteLine($"Input Path:  {config?.InputPath}");
-            Console.WriteLine($"Output Path: {config?.OutputPath}");
-            Console.WriteLine($"Password Mask: {config?.PasswordMask}");
-            string rootPreview = string.IsNullOrEmpty(config?.RootKey) ? "(not set)" : (config.RootKey.Length <= 4 ? "****" : config.RootKey.Substring(0, 2) + new string('*', Math.Min(4, config.RootKey.Length - 2)));
-            Console.WriteLine($"Root Key:    {rootPreview}");
-            Console.WriteLine("--------------------------------");
-
-            // AI-generated (Claude): report a bad root key clearly instead of crashing.
-            try
-            {
-                // Derive Monthly Master Key
-                var masterKey = Crypto.DeriveMonthlyMasterKey(config?.RootKey ?? string.Empty, dateCode);
-
-                // Run processor with configurable mask/length from config
-                Processor.Process(
-                    config?.InputPath ?? string.Empty,
-                    config?.OutputPath ?? string.Empty,
-                    masterKey,
-                    config?.PasswordMask ?? "XxxxxNSxxxNN");
-            }
-            catch (ArgumentException ex)
-            {
-                Console.WriteLine($"Error: {ex.Message}");
-            }
-        }
-        else
-        {
-            Console.WriteLine("Error: config.json not found.");
-        }
-        // Only pause if a real user is interacting with a standard console window
+        // Only pause if a real user is interacting with a standard console window.
         if (!Console.IsInputRedirected)
         {
             Console.WriteLine("Press any key to exit...");
             Console.ReadKey();
         }
+        return exitCode;
     }
-}
 
-// A simple class to hold your paths
-public class ConfigData
-{
-    public string InputPath { get; set; } = string.Empty;
-    public string OutputPath { get; set; } = string.Empty;
-    public string RootKey { get; set; } = string.Empty;
-    public string PasswordMask { get; set; } = "XxxxxNSxxxNN";
+    private static int Run(string[] args)
+    {
+        if (args.Length is < 1 or > 2)
+        {
+            Console.WriteLine("Usage: SecretKey <YYMM> [workspace folder]");
+            Console.WriteLine("Example: SecretKey 2611 \"C:\\Users\\me\\Documents\\secretkey\"");
+            return 1;
+        }
+
+        string dateCode = args[0];
+        string workspace = Path.GetFullPath(args.Length == 2 ? args[1] : AppContext.BaseDirectory);
+        string configPath = Path.Combine(workspace, SecretKeyConfig.FileName);
+
+        try
+        {
+            if (!File.Exists(configPath))
+            {
+                Console.WriteLine($"Error: {configPath} not found.");
+                return 1;
+            }
+
+            SecretKeyConfig config = SecretKeyConfig.Load(configPath);
+
+            Console.WriteLine($"Date code:     {dateCode}");
+            Console.WriteLine($"Workspace:     {workspace}");
+            Console.WriteLine($"Input file:    {config.InputPath}");
+            Console.WriteLine($"Output file:   {config.OutputPath}");
+            Console.WriteLine($"Password mask: {config.PasswordMask}");
+            Console.WriteLine($"Root key:      {(string.IsNullOrWhiteSpace(config.RootKey) ? "(not set)" : "(set, not shown)")}");
+
+            ProcessResult result = Processor.Run(config, workspace, dateCode);
+
+            Console.WriteLine($"Done: {result.Accounts} passwords written to {config.OutputPath}" +
+                (result.CustomMasks > 0 ? $" ({result.CustomMasks} with their own passwordmask=)." : "."));
+            if (result.InputPasswordsCleared)
+            {
+                Console.WriteLine("Old passwords were cleared from the input file.");
+            }
+            return 0;
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidDataException or IOException or UnauthorizedAccessException)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            return 1;
+        }
+    }
 }

@@ -1,8 +1,16 @@
 # SecretKey
 
-## About this project
+<!-- AI-generated: this README was written by Claude (Anthropic). Every statement in it is checked against the code; see CLAUDE.md. -->
 
-<!-- AI-generated: this section was written by Claude (Anthropic). -->
+SecretKey makes a password for every account in a CSV file, such as an export from 1Password. Each password comes from:
+
+- your **root key**, a random 32-byte secret kept in `config.json`
+- a **date code**, the month as `YYMM` (`2611` is November 2026)
+- the account's **Title**, **Url** and **Username**, and its **mask** (the password's pattern)
+
+The same inputs always give the same passwords, on any PC, so nothing has to be stored. To recover a password, run SecretKey again. To change every password, use a new date code.
+
+## About this project
 
 - **Built with AI-generated code.** The purpose of SecretKey is to build a real, useful app with AI-generated code. The code is written by AI coding assistants (Claude by Anthropic, and earlier GitHub Copilot). A human, the repository owner, reviews every change and merges it through a pull request.
   - Files Claude wrote or changed say so in a comment at the top of the file.
@@ -13,84 +21,127 @@
   - MSTest, Microsoft's test framework, used by the tests only
 
   A test fails if any other package is added.
-- **Checkable by an AI.** [CLAUDE.md](CLAUDE.md) tells an AI assistant how to build, test, and check this README against the code.
+- **Checkable by an AI.** [CLAUDE.md](CLAUDE.md) tells an AI assistant how to build, test, and check this README against the code. `ReadmeClaimsTests` checks the README's facts automatically.
 
-## Overview
+## Security: what to protect
 
-A deterministic, stateless password‑generation, recovery, and sharing tool built as a small Visual Studio solution (target: .NET 10).
-SecretKey derives passwords from a 1Password‑style .csv file using a secret key and a date code. No password database is required.
+- **`config.json` holds your root key.** With `config.json` and your input file, anyone can regenerate every password, for any month. The date code is not a real secret: it's just a month, so it's easy to guess.
+  - Keep `config.json` private, for example on an encrypted drive.
+  - Back it up. If the root key is lost, the passwords can't be regenerated.
+- **Sharing.** If you give someone `config.json` and the input file, for example on a mailed flash drive, you are giving them every password. Encrypt the drive.
+- **The output file holds your passwords in plain text.** Import it into your password manager, then delete it.
+- **Git.** `.gitignore` excludes `config.json` and `*.pfx`. Never commit a real root key or a signing certificate.
 
-The secret key is a 32‑byte master key (hex‑encoded) that you keep private and store in a JSON configuration file.
+## Desktop app (SecretKeyUI)
 
-The date code is a 4‑digit number (YYMM) that only you know. Passwords are derived from the input .csv file using something you have (the secret key) and something you know (the date code).
+1. **Select Folder...** picks your workspace folder. `config.json` is saved there.
+2. Use the two **Browse...** buttons to pick the input file and choose where the output file goes.
+3. Enter the **Global Password Pattern Mask**. The default is `XxxxxNSxxxNN`.
+4. Click **Generate New Key** for a new root key, or paste yours.
+5. Click **Save Config**. The root key and mask are checked before anything is saved.
+6. Enter the **date code** and click **Run SecretKey**. The status bar shows how many passwords were written.
 
-This allows you to generate the same passwords consistently without storing them anywhere.
+## Command-line app (SecretKey)
 
-The generator operates on a CSV file exported from 1Password (or similar) and produces a new CSV with the same entries but with the passwords generated.
+```
+SecretKey <YYMM> [workspace folder]
+```
 
-The input CSV is expected to have a header row and the following columns: `title`, `username`, `password`, `url`, `notes`. 
+It reads `config.json` from the workspace folder. Without a folder, it uses the folder `SecretKey.exe` is in. It prints a summary, never the root key, and exits with code 0 on success or 1 on any error.
 
-The input .csv file is normalized, and the old password column is removed immediately to prevent password leaks.
+## Configuration (`config.json`)
 
-You can use the date code to generate new passwords periodically (e.g., monthly) while keeping the same secret key.
+| Setting | Meaning |
+|---|---|
+| `RootKey` | Your root key: exactly 64 hexadecimal characters (32 bytes). **The secret.** |
+| `InputPath` | The input CSV file. |
+| `OutputPath` | Where to write the output CSV. Must be a different file from `InputPath`. |
+| `PasswordMask` | The mask for accounts without their own `passwordmask=` note. |
 
-The generator produces consistent passwords based on the input CSV, the secret key, and the date code, allowing you to manage your passwords without storing them.
+A relative path is taken relative to the folder that holds `config.json`. `config.example.json` shows the layout; its placeholder root key is rejected until you replace it.
 
-The passwords can be recovered at any time by running the generator with the same secret key and date code, making it a stateless solution.
+## Input file
 
-Passwords can be shared securely by providing the secret key and date code to trusted parties, without sharing the actual passwords.
+- A CSV file in UTF-8 (with or without a byte-order mark), with a header row.
+- Columns are found **by name**, in any order and any letter case:
+  - `Title`, `Url` and `Username` are required.
+  - `Notes` is optional and is where a `passwordmask=` setting goes.
+  - `Password` is optional. Old passwords in it are cleared (see below).
+  - Other columns are ignored.
+- Quoted fields may contain commas, doubled quotes (`""`) and line breaks, so multi-line notes are fine.
+- Blank lines are skipped.
+- The run stops, naming the line, for a row with more fields than the header or a row with no Title, Url or Username.
+- `sample_input.csv` is an example.
 
-For sharing, I can USPS‑mail a flash drive containing the normalized .csv file and the config file with the secret key.
+**Nothing is written until the whole input file has been checked.** If anything is wrong, no file is created or changed.
 
-This provides an air‑gap from the internet so the password can be generated by also sharing the date code.
+### What happens to the input file
 
-Projects
-- `SecretKey.Core` — cryptographic engine and CSV parsing (class library).
-- `SecretKey` — console application (EXE) that runs the batch generator.
-- `SecretKeyUI` — WinUI 3 desktop front-end that hosts the console engine for interactive use.
+If the `Password` column has any values, SecretKey clears them from the input file after writing the output, so old passwords don't linger. Every other value is kept, including multi-line notes. The new file is written to a temporary file and then swapped in. A line is added to `secretkey_events.log` in the same folder with the time, the output file name and the number of rows, but no passwords. If the `Password` column is empty, the input file is not touched.
 
-Quick start (developer)
-1. Clone the repository and open `SecretKey.slnx` in Visual Studio 2026 (or newer).
-2. Restore NuGet packages and build the solution (target framework: .NET 10).
-3. CLI run:
-   - Provide a 4-digit DateCode as the single command line argument (example: `2606`).
-   - In Visual Studio: right‑click the `SecretKey` project → Properties → Debug → set the command line arguments → F5.
-4. UI run:
-   - Set `SecretKeyUI` as the startup project and run (WinUI 3, x64). The UI references the console engine projects.
+## Output file
 
-Configuration and inputs
-- `config.example.json` shows the expected layout:
-  - `RootKey` — 32-byte hex master key (do not store in source control).
-  - `InputPath`, `OutputPath`, `PasswordMask`.
-- Place 1Password CSV exports (rename to `import.csv`) in the configured input folder. A `sample_input.csv` is included for testing.
+The output CSV has exactly four columns: `Title,Url,Username,Password`.
 
-### Password Mask Overrides (Notes column)
+- Title, Url and Username are written as used for the password: spaces trimmed, and `https://` added to a URL without `http://` or `https://`.
+- The passwords are in plain text. Open the file in your password manager, not a spreadsheet: a spreadsheet may treat a password that starts with `=`, `+`, `-` or `@` as a formula.
 
-You can override the default password mask on a per-account basis by placing a mask directive inside the account's Notes field. The engine looks for a directive of the form:
+## Masks
 
-`passwordmask=[CustomMask]`
+| Mask character | Gives |
+|---|---|
+| `X` | an uppercase letter, A–Z |
+| `x` | a lowercase letter, a–z |
+| `N` | a digit, 0–9 |
+| `S` | a symbol from `!@#$%&*()-_=+[]{}<>?` |
 
-- Place the text anywhere inside the Notes column (the CSV export from 1Password will contain that text in the Notes field).  
-- When found, the engine drops the global/default mask and uses the provided `CustomMask` for that account only. If the mask is invalid the engine falls back to the default mask and reports a warning.
+Any other visible ASCII character, such as `-` or `_`, is copied into the password as-is. That helps when a site only allows certain symbols.
 
-Mask token meanings (common tokens)
-- `X` — uppercase letter (A–Z)  
-- `x` — lowercase letter (a–z)  
-- `N` — numeric digit (0–9)  
-- `S` — special character from the configured symbol set
+A mask may have at most 64 characters and needs at least 4 of `X`, `x`, `N` or `S`. Spaces and non-ASCII characters aren't allowed. The default mask `XxxxxNSxxxNN` gives passwords like `Fiipc3]jpv38`.
 
-Example
-- Notes: `Two-factor enabled — passwordmask=XxxxxNSxxxNN`  
-  Result: generated password will follow the pattern: 1 uppercase, 4 lowercase, 1 numeric, 1 special, 3 lowercase, 2 digits.
+### Per-account masks (`passwordmask=`)
 
-Note: See `SecretKey.Core` for the authoritative mask grammar and any additional tokens the engine supports.
+To give one account its own mask, put `passwordmask=` followed by the mask anywhere in its **Notes**. For example, use `passwordmask=xxxxxxxxNNNN` for a site that allows no symbols.
 
-Security notes
-- Never commit `config.json` or private keys. Add secrets to `.gitignore`. The repository contains `package.pfx` used for packaging — treat it as sensitive.
-- The engine uses HMAC-SHA256 and deterministic mapping to a mask; review `SecretKey.Core` before production use.
+- The mask ends at the first space or line break.
+- `passwordmask` can be in any letter case.
+- One per account.
+- If it's invalid, the run stops with an error naming the line and the account, and nothing is written.
 
-Packaging & platform
-- `SecretKeyUI` is a WinUI 3 desktop app configured for MSIX tooling and self-contained Windows App SDK runtime (x64).
+## Date code
 
-Contributing & license
-- See `LICENSE` for terms. Open issues/PRs on the GitHub repo.
+Four digits, `YYMM`, with a month from 01 to 12. A new date code gives every account a new password. Old passwords can always be regenerated with their old date code.
+
+## What changes a password
+
+These change a password: the root key, the date code, the account's Title, Url or Username, and its mask (global or `passwordmask=`). Nothing else does, including Notes text other than `passwordmask=`.
+
+Editing an account's title or URL in your password manager changes its SecretKey password, so keep your input file as the reference.
+
+## How passwords are made
+
+[docs/password-derivation.md](docs/password-derivation.md) gives the exact recipe (version 2), so the passwords can be regenerated without this app. In short: HKDF-SHA256 derives the month's key from the root key, and HMAC-SHA256 turns each account into an unbiased stream of characters. Known-answer tests lock the results.
+
+## Projects
+
+| Project | What it is |
+|---|---|
+| `SecretKey.Core` | The engine: password math (`Crypto.cs`), CSV reading and writing, settings and checks. |
+| `SecretKey` | The command-line app. |
+| `SecretKeyUI` | The WinUI 3 desktop app. It calls `SecretKey.Core` directly. |
+| `SecretKey.Core.Tests` | MSTest tests: password math, CSV, settings, repository rules and README checks. |
+
+## Building and testing
+
+- Windows, Visual Studio 2026 and the .NET 10 SDK. Open `SecretKey.slnx`.
+- Run the tests with **Test → Test Explorer** in Visual Studio, or:
+
+  ```
+  dotnet test SecretKey.Core.Tests/SecretKey.Core.Tests.csproj
+  ```
+
+- `SecretKeyUI` is packaged as MSIX (full trust) for a clean install and uninstall.
+
+## License
+
+MIT. See `LICENSE`.

@@ -384,3 +384,7 @@ MSBuild_Logs/
 healthchecksdb
 
 # Ignore project config
+# AI-generated (Claude): config.json holds the root key (the secret behind every password).
+config.json
+# Temporary file SecretKey writes while clearing old passwords from the input file.
+*.secretkey-tmp

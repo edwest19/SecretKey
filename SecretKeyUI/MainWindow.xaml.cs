@@ -1,24 +1,31 @@
+// ============================================================================
+// Copyright (c) 2026 edwest19. Licensed under the MIT License (see LICENSE).
+// AI-GENERATED CODE (partial): Claude (Anthropic) rewrote BtnSaveConfig_Click,
+// BtnRunEngine_Click and the config loading in BtnBrowseWorkspace_Click to use the
+// shared SecretKey.Core settings, checks and Processor.Run, and removed the unused
+// secretkey.exe lookup. The rest of this file predates Claude's work.
+// SecretKey is a project built with AI-generated code; see README.md.
+// ============================================================================
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Text.Json;
+// Exact-name imports so these can't clash with similarly named WinUI types.
+using Processor = SecretKey.Core.Processor;
+using ProcessResult = SecretKey.Core.ProcessResult;
+using SecretKeyConfig = SecretKey.Core.SecretKeyConfig;
+using Validation = SecretKey.Core.Validation;
 
 namespace SecretKeyUI
 {
     public sealed partial class MainWindow : Window
     {
-        // Absolute isolated engine pointer location within the deployment package
-        private readonly string exePath;
         private string CurrentWorkspaceDir = string.Empty;
 
         public MainWindow()
         {
             this.InitializeComponent();
-
-            // Safely assign the execution engine path inside the constructor
-            exePath = Path.Combine(AppContext.BaseDirectory, "secretkey.exe");
 
             // Set a default workspace safety fall-back path
             CurrentWorkspaceDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "secretkey");
@@ -63,6 +70,7 @@ namespace SecretKeyUI
         }
 
         // BUTTON 1: Manually commit current UI screen data to config.json
+        // AI-generated (Claude): checks the root key and mask with SecretKey.Core before saving.
         private void BtnSaveConfig_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(CurrentWorkspaceDir))
@@ -71,20 +79,25 @@ namespace SecretKeyUI
                 return;
             }
 
+            var configData = new SecretKeyConfig
+            {
+                InputPath = TxtInputPath.Text?.Trim() ?? string.Empty,
+                OutputPath = TxtOutputPath.Text?.Trim() ?? string.Empty,
+                PasswordMask = TxtMask.Text?.Trim() ?? string.Empty,
+                RootKey = TxtRootKey.Text?.Trim() ?? string.Empty
+            };
+
+            string? problem = Validation.RootKeyError(configData.RootKey) ?? Validation.MaskError(configData.PasswordMask);
+            if (problem is not null)
+            {
+                MarkConfigValid(false);
+                UpdateStatus($"Not saved: {problem}", Microsoft.UI.Xaml.Controls.InfoBarSeverity.Error);
+                return;
+            }
+
             try
             {
-                var configData = new SecretKeyConfig
-                {
-                    InputPath = TxtInputPath.Text ?? string.Empty,
-                    OutputPath = TxtOutputPath.Text ?? string.Empty,
-                    PasswordMask = TxtMask.Text ?? string.Empty,
-                    RootKey = TxtRootKey.Text ?? string.Empty
-                };
-
-                string targetConfig = Path.Combine(CurrentWorkspaceDir, "config.json");
-                string updatedJson = JsonSerializer.Serialize(configData, new JsonSerializerOptions { WriteIndented = true });
-
-                File.WriteAllText(targetConfig, updatedJson);
+                configData.Save(Path.Combine(CurrentWorkspaceDir, SecretKeyConfig.FileName));
 
                 UpdateStatus($"Success: config.json updated inside {CurrentWorkspaceDir}.", Microsoft.UI.Xaml.Controls.InfoBarSeverity.Success);
 
@@ -98,13 +111,16 @@ namespace SecretKeyUI
             }
         }
 
-        // BUTTON 2: Spawns secretkey.exe directly using OS shell execution. No save required.
+        // BUTTON 2: Generate the passwords in-process with SecretKey.Core, using the saved config.json.
+        // AI-generated (Claude): all checks and the run itself are done by SecretKey.Core.Processor.Run,
+        // the same code the command-line app uses.
         private void BtnRunEngine_Click(object sender, RoutedEventArgs e)
         {
             string dateCode = TxtDateCode.Text?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(dateCode) || dateCode.Length != 4)
+            string? dateCodeProblem = Validation.DateCodeError(dateCode);
+            if (dateCodeProblem is not null)
             {
-                UpdateStatus("Validation Failure: Active Runtime Date Code parameter must be exactly 4 digits.", Microsoft.UI.Xaml.Controls.InfoBarSeverity.Error);
+                UpdateStatus(dateCodeProblem, Microsoft.UI.Xaml.Controls.InfoBarSeverity.Error);
                 return;
             }
 
@@ -114,13 +130,7 @@ namespace SecretKeyUI
                 return;
             }
 
-            // If external exe is missing, continue with in-process call but notify the user
-            if (!File.Exists(exePath))
-            {
-                UpdateStatus($"Note: external engine executable not found at {exePath}. Running in-process using SecretKey.Core.", Microsoft.UI.Xaml.Controls.InfoBarSeverity.Informational);
-            }
-
-            string targetConfig = Path.Combine(CurrentWorkspaceDir, "config.json");
+            string targetConfig = Path.Combine(CurrentWorkspaceDir, SecretKeyConfig.FileName);
             if (!File.Exists(targetConfig))
             {
                 UpdateStatus($"Configuration missing: {targetConfig}. Create or save a config.json in the workspace first.", Microsoft.UI.Xaml.Controls.InfoBarSeverity.Error);
@@ -129,66 +139,24 @@ namespace SecretKeyUI
 
             try
             {
-                string jsonString = File.ReadAllText(targetConfig);
-                var existingConfig = JsonSerializer.Deserialize<SecretKeyConfig>(jsonString);
+                SecretKeyConfig config = SecretKeyConfig.Load(targetConfig);
+                ProcessResult result = Processor.Run(config, CurrentWorkspaceDir, dateCode);
 
-                if (existingConfig == null)
+                string message = $"Done: {result.Accounts} passwords written to {config.OutputPath}";
+                if (result.CustomMasks > 0)
                 {
-                    UpdateStatus("Config parse error: config.json deserialized to null.", Microsoft.UI.Xaml.Controls.InfoBarSeverity.Error);
-                    return;
+                    message += $" ({result.CustomMasks} with their own passwordmask=)";
                 }
-
-                if (string.IsNullOrWhiteSpace(existingConfig.InputPath) || !File.Exists(existingConfig.InputPath))
+                if (result.InputPasswordsCleared)
                 {
-                    UpdateStatus($"Input file not found or not specified: {existingConfig?.InputPath}", Microsoft.UI.Xaml.Controls.InfoBarSeverity.Error);
-                    return;
+                    message += ". Old passwords were cleared from the input file";
                 }
-
-                if (string.IsNullOrWhiteSpace(existingConfig.OutputPath))
-                {
-                    UpdateStatus("Output path is empty in config.json.", Microsoft.UI.Xaml.Controls.InfoBarSeverity.Error);
-                    return;
-                }
-
-                try
-                {
-                    var outDir = Path.GetDirectoryName(existingConfig.OutputPath);
-                    if (!string.IsNullOrWhiteSpace(outDir) && !Directory.Exists(outDir))
-                    {
-                        Directory.CreateDirectory(outDir);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine(ex.ToString());
-                    UpdateStatus($"Unable to prepare output directory: {ex.Message}", Microsoft.UI.Xaml.Controls.InfoBarSeverity.Error);
-                    return;
-                }
-
-                UpdateStatus("Starting in-process engine run...", Microsoft.UI.Xaml.Controls.InfoBarSeverity.Informational);
-
-                try
-                {
-                    var masterKey = SecretKey.Core.Crypto.DeriveMonthlyMasterKey(existingConfig.RootKey ?? string.Empty, dateCode);
-                    SecretKey.Core.Processor.Process(existingConfig.InputPath, existingConfig.OutputPath, masterKey, existingConfig.PasswordMask ?? "XxxxxNSxxxNN");
-
-                    UpdateStatus($"Engine run completed. Output written to {existingConfig.OutputPath}", Microsoft.UI.Xaml.Controls.InfoBarSeverity.Success);
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine(ex.ToString());
-                    UpdateStatus($"Engine run failed: {ex.Message}. See debug output for details.", Microsoft.UI.Xaml.Controls.InfoBarSeverity.Error);
-                }
-            }
-            catch (JsonException jex)
-            {
-                Debug.WriteLine(jex.ToString());
-                UpdateStatus($"Configuration JSON parse error: {jex.Message}", Microsoft.UI.Xaml.Controls.InfoBarSeverity.Error);
+                UpdateStatus(message + ".", Microsoft.UI.Xaml.Controls.InfoBarSeverity.Success);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine(ex.ToString());
-                UpdateStatus($"Unexpected error while preparing engine run: {ex.Message}", Microsoft.UI.Xaml.Controls.InfoBarSeverity.Error);
+                UpdateStatus($"Not run: {ex.Message}", Microsoft.UI.Xaml.Controls.InfoBarSeverity.Error);
             }
         }
 
@@ -220,8 +188,8 @@ namespace SecretKeyUI
                 {
                     try
                     {
-                        string jsonString = File.ReadAllText(targetConfigFile);
-                        var existingConfig = JsonSerializer.Deserialize<SecretKeyConfig>(jsonString);
+                        // AI-generated (Claude): shared loader from SecretKey.Core.
+                        var existingConfig = SecretKeyConfig.Load(targetConfigFile);
 
                         if (existingConfig != null)
                         {
@@ -304,14 +272,5 @@ namespace SecretKeyUI
             StatusDisplay.Message = message;
             StatusDisplay.Severity = severity;
         }
-    }
-
-    // Data contract matching the structure written to your workspace config.json file
-    public class SecretKeyConfig
-    {
-        public string InputPath { get; set; } = string.Empty;
-        public string OutputPath { get; set; } = string.Empty;
-        public string PasswordMask { get; set; } = string.Empty;
-        public string RootKey { get; set; } = string.Empty;
     }
 }

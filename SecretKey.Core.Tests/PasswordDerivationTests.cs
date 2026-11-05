@@ -102,7 +102,7 @@ public sealed class PasswordDerivationTests
     [TestMethod]
     public void SampleInputFile_ProducesKnownOutput()
     {
-        // Solterra's "passwordmask=" note is not applied yet, so it gets the default mask.
+        // Solterra's Notes say "passwordmask=xxxxxxxxNNNN", so it gets 8 letters and 4 digits.
         string sample = Path.Combine(AppContext.BaseDirectory, "TestData", "sample_input.csv");
         string[] rows = File.ReadAllLines(sample).Skip(1).ToArray();
 
@@ -111,7 +111,7 @@ public sealed class PasswordDerivationTests
             OutputHeader,
             "Bhphotovideo,https://www.bhphotovideo.com,email@sample.com,Fiipc3]jpv38",
             "Paramount+,https://paramountplus.com,email@yahoo.com,Xxkch8{gnc91",
-            "Solterra,,email@sample.com,Iuxxy3$rud15",
+            "Solterra,,email@sample.com,ydnvoivn3947",
             "MTA eTix,https://www.mta.info/,email@sample.com,Qlljp5[oht46",
         }, Run(rows));
     }
