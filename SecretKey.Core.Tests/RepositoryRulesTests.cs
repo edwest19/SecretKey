@@ -45,7 +45,7 @@ public sealed class RepositoryRulesTests
             }
         }
 
-        Assert.IsTrue(used.Count > 0, "Expected to find the project's package references.");
+        Assert.IsNotEmpty(used, "Expected to find the project's package references.");
     }
 
     [TestMethod]
@@ -71,7 +71,7 @@ public sealed class RepositoryRulesTests
             }
         }
 
-        Assert.IsTrue(filesChecked > 0, "Expected to scan the app's source files.");
+        Assert.IsGreaterThan(0, filesChecked, "Expected to scan the app's source files.");
     }
 
     [TestMethod]
