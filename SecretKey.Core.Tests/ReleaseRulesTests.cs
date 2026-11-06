@@ -48,6 +48,22 @@ public sealed class ReleaseRulesTests
     }
 
     [TestMethod]
+    public void SigningSubject_IsStatedTheSameEverywhere_ForTheReleaseEnvironment()
+    {
+        // AI-generated (Claude): the Azure federated credential trusts exactly this immutable OIDC subject.
+        var subject = new Regex(@"repo:[^@\s/]+@\d+/[^@\s:]+@\d+:environment:[A-Za-z0-9_-]+");
+        string workflow = Read(".github", "workflows", "release.yml");
+        string[] stated = new[] { Read("README.md"), Read("CLAUDE.md"), workflow }.Select(text => subject.Match(text).Value).ToArray();
+
+        Assert.IsTrue(stated.All(s => s.Length > 0), "README.md, CLAUDE.md and release.yml must each state the signing subject.");
+        Assert.HasCount(1, stated.Distinct(), $"The signing subject differs between files: {string.Join(" | ", stated)}");
+
+        string environment = Regex.Match(workflow, @"^\s*environment:\s*(\S+)\s*$", RegexOptions.Multiline).Groups[1].Value;
+        Assert.IsTrue(stated[0].EndsWith(":environment:" + environment, StringComparison.Ordinal),
+            $"The subject {stated[0]} must name the sign job's environment '{environment}'.");
+    }
+
+    [TestMethod]
     public void ManifestVersion_IsTheProjectVersionPlusZero()
     {
         string version = ProjectVersion();

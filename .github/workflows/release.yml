@@ -22,7 +22,9 @@
 #
 # How it signs in to Azure:
 #   By OpenID Connect. GitHub gives the sign job a short-lived token naming this repository
-#   and the "release" environment; Azure accepts it only for that. No password, key or client
+#   and the "release" environment; Azure accepts it only for that. The repository uses
+#   immutable subject claims, so the token's subject is repo:edwest19@5809459/SecretKey@1239108708:environment:release
+#   (the owner and repository IDs never change and are never reused). No password, key or client
 #   secret is stored anywhere. AZURE_CLIENT_ID, AZURE_TENANT_ID and AZURE_SUBSCRIPTION_ID are
 #   identifiers, held as secrets of the "release" environment so only the sign job can read them.
 #
