@@ -44,6 +44,7 @@ The purpose of the project is to build a real app with AI-generated code. AI ass
    - The version lives in `Directory.Build.props`, `SecretKeyUI/Package.appxmanifest` (`X.Y.Z.0`) and `CHANGELOG.md`.
    - The manifest's `Publisher` must equal `EXPECTED_SIGNER` in `release.yml`.
    - Workflow actions are pinned to full commit SHAs.
+   - Signing trusts one immutable OIDC subject, `repo:edwest19@5809459/SecretKey@1239108708:environment:release` (README "Releases"). Renaming the repo, its owner or the `release` environment breaks signing until the Azure federated credential is updated.
    - Enforced by `ReleaseRulesTests`.
 
 ## Layout

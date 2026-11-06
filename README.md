@@ -174,6 +174,13 @@ Releases are built, signed and published by `.github/workflows/release.yml`, onl
 
 Signing uses OpenID Connect, so no password or key is stored in GitHub. Every action is pinned to an exact commit. The workflows turn off the .NET CLI's and winapp's usage telemetry.
 
+The repository uses GitHub's **immutable OIDC subject claims** (**Settings → Actions → OIDC → Use immutable subject claim**), so the sign-in token names the repository by its numeric IDs as well as its name. The Azure app registration `SecretKey-GitHubActions-Signing` trusts exactly this subject:
+
+`repo:edwest19@5809459/SecretKey@1239108708:environment:release`
+
+- A different repository that later takes the name `edwest19/SecretKey` can't match it.
+- Renaming this repository, its owner or the `release` environment changes the subject. The Azure federated credential must then be updated to match.
+
 ## License
 
 MIT. See `LICENSE`.
