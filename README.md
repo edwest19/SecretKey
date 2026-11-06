@@ -23,6 +23,18 @@ The same inputs always give the same passwords, on any PC, so nothing has to be 
   A test fails if any other package is added.
 - **Checkable by an AI.** [CLAUDE.md](CLAUDE.md) tells an AI assistant how to build, test, and check this README against the code. `ReadmeClaimsTests` checks the README's facts automatically.
 
+## Install
+
+1. Open the [latest release](https://github.com/edwest19/SecretKey/releases/latest) and download `SecretKey-<version>-x64.msix`.
+2. Open the file. Windows installs SecretKey and shows the publisher, Edwin West. The installer is signed, so Windows can confirm who made it and that it hasn't been changed.
+3. Start **SecretKey** from the Start menu.
+
+To uninstall, go to **Settings → Apps → Installed apps → SecretKey → Uninstall**.
+
+- The MSIX includes .NET and the Windows App SDK, so nothing else needs to be installed. It runs on 64-bit (x64) Windows.
+- Each release also has a `.sha256` file. To check your download, compare it with the output of `Get-FileHash .\SecretKey-<version>-x64.msix` in PowerShell.
+- A pre-release (a `-rc` version) has the same package version as the final release. Uninstall it before installing the final one.
+
 ## Security: what to protect
 
 - **`config.json` holds your root key.** With `config.json` and your input file, anyone can regenerate every password, for any month. The date code is not a real secret: it's just a month, so it's easy to guess.
@@ -140,7 +152,27 @@ Editing an account's title or URL in your password manager changes its SecretKey
   dotnet test SecretKey.Core.Tests/SecretKey.Core.Tests.csproj
   ```
 
-- `SecretKeyUI` is packaged as MSIX (full trust) for a clean install and uninstall.
+- `SecretKeyUI` is packaged as an MSIX (full trust) for a clean install and uninstall. Every pull request packages it, unsigned, and `scripts/Test-Msix.ps1` checks the package: publisher, version, self-contained (no other packages needed), and no permission except `runFullTrust`.
+
+## Releases
+
+Releases are built, signed and published by `.github/workflows/release.yml`, only when a version tag is pushed.
+
+1. Set the version in **three places**. `ReleaseRulesTests` fails if they disagree.
+   - `Directory.Build.props`: `X.Y.Z`
+   - `SecretKeyUI/Package.appxmanifest`: `X.Y.Z.0`
+   - `CHANGELOG.md`: a heading `## [X.Y.Z] - YYYY-MM-DD`, whose text becomes the release notes
+2. Push a tag `vX.Y.Z`, or `vX.Y.Z-rc.N` for a pre-release.
+3. The workflow then:
+   - checks the tag against the version
+   - runs the tests
+   - packages the MSIX and checks it with `scripts/Test-Msix.ps1`
+   - **waits for the owner's approval** in the GitHub environment `release`
+   - signs the MSIX with Azure Artifact Signing (account `edwest19`, profile `CodeSigning-Apps`, East US)
+   - checks that the signature is valid, timestamped and made by `CN=Edwin West, O=Edwin West, L=Huntington, S=ny, C=US`
+   - publishes the GitHub Release with the MSIX and its `.sha256`
+
+Signing uses OpenID Connect, so no password or key is stored in GitHub. Every action is pinned to an exact commit. The workflows turn off the .NET CLI's and winapp's usage telemetry.
 
 ## License
 
