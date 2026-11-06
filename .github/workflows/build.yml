@@ -1,6 +1,18 @@
-# AI-GENERATED (partial): Claude (Anthropic) added the pull_request trigger, the
-# read-only permissions and the test job. SecretKey is a project built with
-# AI-generated code; see README.md.
+# ============================================================================
+# Copyright (c) 2026 edwest19. Licensed under the MIT License (see LICENSE).
+# AI-GENERATED CODE: This file was written by Claude (Anthropic), replacing an
+# earlier build-only version. SecretKey is a project built with AI-generated code;
+# see README.md.
+# ============================================================================
+#
+# Build: runs on every pull request and every push to main.
+#   test   Runs the tests.
+#   build  Builds the whole solution, then packages the desktop app as an unsigned MSIX
+#          the same way the release workflow does, so packaging problems show up in the
+#          pull request rather than at release time. Nothing here is signed or published.
+#
+# Actions are pinned to exact commits (version in the comment); see release.yml.
+# ============================================================================
 name: Build
 
 on:
@@ -17,42 +29,62 @@ permissions:
 jobs:
   test:
     runs-on: windows-latest
+    timeout-minutes: 20
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: '10.0.x'
 
-      - name: Test (password known-answer tests)
+      - name: Test
         run: dotnet test SecretKey.Core.Tests/SecretKey.Core.Tests.csproj --configuration Release
 
   build:
     runs-on: windows-latest
+    timeout-minutes: 30
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: '10.0.x'
 
-      - name: Restore
-        run: dotnet restore
-
-      - name: Build
-        run: dotnet build --configuration Release --no-restore
-
-      - name: Publish (no MSIX, just EXE)
-        run: dotnet publish SecretKeyUI/SecretKeyUI.csproj -c Release -r win-x64 --self-contained false -o publish
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Set up winapp (Microsoft's Windows App Development CLI)
+        uses: microsoft/setup-WinAppCli@9288bd0729bd3f71e2ed1b9eb247dc91470b824e # v0.3.0
         with:
-          name: SecretKey-build
-          path: publish
+          version: v0.7.1
+
+      - name: Build the solution
+        run: dotnet build SecretKey.slnx --configuration Release
+
+      - name: Package the MSIX (unsigned, as the release workflow does)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          [xml] $properties = Get-Content -LiteralPath 'Directory.Build.props' -Raw
+          $version = @($properties.Project.PropertyGroup | ForEach-Object { $_.Version } | Where-Object { $_ })[0]
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          $msix = "artifacts/SecretKey-$version-x64-unsigned.msix"
+          winapp pack SecretKeyUI/SecretKeyUI.csproj -c Release --arch x64 --no-sign -p SelfContained=true --output $msix
+          if ($LASTEXITCODE -ne 0) { throw "winapp pack failed with exit code $LASTEXITCODE." }
+          if (-not (Test-Path -LiteralPath $msix)) { throw "winapp pack reported success but $msix is missing." }
+          Write-Host "Packaged $msix ($((Get-Item -LiteralPath $msix).Length) bytes)."
+
+      - name: Keep the unsigned MSIX for inspection
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: SecretKey-unsigned-msix
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 7

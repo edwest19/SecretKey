@@ -39,6 +39,12 @@ The purpose of the project is to build a real app with AI-generated code. AI ass
    - Never commit `config.json`, a real root key, a `.pfx` file, or signing credentials.
    - Tests use only the clearly marked TEST-ONLY key.
 7. **Pull requests only.** Work on a branch and open a pull request; never push to `main`.
+8. **Releases only through the release workflow.**
+   - Never sign or publish by hand.
+   - The version lives in `Directory.Build.props`, `SecretKeyUI/Package.appxmanifest` (`X.Y.Z.0`) and `CHANGELOG.md`.
+   - The manifest's `Publisher` must equal `EXPECTED_SIGNER` in `release.yml`.
+   - Workflow actions are pinned to full commit SHAs.
+   - Enforced by `ReleaseRulesTests`.
 
 ## Layout
 
@@ -54,7 +60,10 @@ The purpose of the project is to build a real app with AI-generated code. AI ass
 | `SecretKeyUI/` | WinUI 3 desktop app, packaged as MSIX (full trust) |
 | `SecretKey.Core.Tests/` | MSTest tests (see the claims map below) |
 | `docs/password-derivation.md` | Exact password recipe |
-| `.github/workflows/build.yml` | CI: tests and Windows build on every pull request |
+| `.github/workflows/build.yml` | CI on every pull request: tests, Windows build, unsigned MSIX packaging |
+| `.github/workflows/release.yml` | Release on a `v*` tag: check, test, package, sign (after approval), publish |
+| `Directory.Build.props` | The version, shared by all projects |
+| `CHANGELOG.md` | Release notes; the release workflow requires an entry for the version |
 
 ## Build and test
 
@@ -94,6 +103,8 @@ Where each README section is implemented and which tests prove it. `ReadmeClaims
 | Date code | `Validation.DateCodeError`, `Crypto.DeriveMonthlyMasterKey` | `ValidationTests.*DateCodes*` |
 | What changes a password | `Crypto.GeneratePassword` | `PasswordDerivationTests` |
 | How passwords are made | `Crypto.cs` | `CryptoTests`, `PasswordDerivationTests`, `ReadmeClaimsTests.Spec_*` |
+| Install | `release.yml` (packaging and signing), `Package.appxmanifest` | `ReleaseRulesTests`; the packaged MSIX is built on every pull request |
+| Releases | `release.yml`, `Directory.Build.props`, `CHANGELOG.md` | `ReleaseRulesTests` |
 
 ## Known gaps (README vs code)
 

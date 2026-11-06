@@ -7,16 +7,22 @@
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   IgnorableNamespaces="uap rescap">
 
+  <!--
+    AI-generated (Claude): Publisher is the exact name the Artifact Signing certificate
+    (account edwest19, profile CodeSigning-Apps) signs as. It is case-sensitive ("S=ny"),
+    must equal EXPECTED_SIGNER in .github/workflows/release.yml, and is checked by
+    ReleaseRulesTests. Version is Directory.Build.props' Version plus ".0".
+  -->
   <Identity
     Name="d3e8fa94-4e8c-4c91-a5d9-a3c738d9cd26"
-    Publisher="CN=Ed"
-    Version="1.0.0.0" />
+    Publisher="CN=Edwin West, O=Edwin West, L=Huntington, S=ny, C=US"
+    Version="2.0.0.0" />
 
   <mp:PhoneIdentity PhoneProductId="d3e8fa94-4e8c-4c91-a5d9-a3c738d9cd26" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>SecretKeyUI</DisplayName>
-    <PublisherDisplayName>Ed</PublisherDisplayName>
+    <DisplayName>SecretKey</DisplayName>
+    <PublisherDisplayName>Edwin West</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
@@ -34,8 +40,8 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="SecretKeyUI"
-        Description="SecretKeyUI"
+        DisplayName="SecretKey"
+        Description="Stateless, deterministic password generator"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">
