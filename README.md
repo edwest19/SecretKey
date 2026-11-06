@@ -152,7 +152,7 @@ Editing an account's title or URL in your password manager changes its SecretKey
   dotnet test SecretKey.Core.Tests/SecretKey.Core.Tests.csproj
   ```
 
-- `SecretKeyUI` is packaged as an MSIX (full trust) for a clean install and uninstall. Every pull request packages it, unsigned, to prove packaging still works.
+- `SecretKeyUI` is packaged as an MSIX (full trust) for a clean install and uninstall. Every pull request packages it, unsigned, and `scripts/Test-Msix.ps1` checks the package: publisher, version, self-contained (no other packages needed), and no permission except `runFullTrust`.
 
 ## Releases
 
@@ -166,13 +166,13 @@ Releases are built, signed and published by `.github/workflows/release.yml`, onl
 3. The workflow then:
    - checks the tag against the version
    - runs the tests
-   - packages the MSIX
+   - packages the MSIX and checks it with `scripts/Test-Msix.ps1`
    - **waits for the owner's approval** in the GitHub environment `release`
    - signs the MSIX with Azure Artifact Signing (account `edwest19`, profile `CodeSigning-Apps`, East US)
    - checks that the signature is valid, timestamped and made by `CN=Edwin West, O=Edwin West, L=Huntington, S=ny, C=US`
    - publishes the GitHub Release with the MSIX and its `.sha256`
 
-Signing uses OpenID Connect, so no password or key is stored in GitHub. Every action is pinned to an exact commit.
+Signing uses OpenID Connect, so no password or key is stored in GitHub. Every action is pinned to an exact commit. The workflows turn off the .NET CLI's and winapp's usage telemetry.
 
 ## License
 

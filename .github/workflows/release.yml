@@ -49,6 +49,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  # Turn off the build tools' usage telemetry (.NET CLI and winapp only send it when this isn't "1").
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  WINAPP_CLI_TELEMETRY_OPTOUT: '1'
   # The name every release is signed as. Package.appxmanifest's Publisher must be exactly this
   # (it is case-sensitive: "S=ny"). ReleaseRulesTests checks that the two match.
   EXPECTED_SIGNER: 'CN=Edwin West, O=Edwin West, L=Huntington, S=ny, C=US'
@@ -145,6 +148,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "winapp pack failed with exit code $LASTEXITCODE." }
           if (-not (Test-Path -LiteralPath $msix)) { throw "winapp pack reported success but $msix is missing." }
           Write-Host "Packaged $msix ($((Get-Item -LiteralPath $msix).Length) bytes)."
+          ./scripts/Test-Msix.ps1 -Path $msix -Version "$($env:VERSION).0" -Publisher $env:EXPECTED_SIGNER
 
       - name: Hand the unsigned MSIX to the sign job
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

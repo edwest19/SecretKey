@@ -26,6 +26,11 @@ on:
 permissions:
   contents: read
 
+# Turn off the build tools' usage telemetry (.NET CLI and winapp only send it when this isn't "1").
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  WINAPP_CLI_TELEMETRY_OPTOUT: '1'
+
 jobs:
   test:
     runs-on: windows-latest
@@ -80,6 +85,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "winapp pack failed with exit code $LASTEXITCODE." }
           if (-not (Test-Path -LiteralPath $msix)) { throw "winapp pack reported success but $msix is missing." }
           Write-Host "Packaged $msix ($((Get-Item -LiteralPath $msix).Length) bytes)."
+          [xml] $source = Get-Content -LiteralPath 'SecretKeyUI/Package.appxmanifest' -Raw
+          $publisher = $source.Package.Identity.Publisher
+          ./scripts/Test-Msix.ps1 -Path $msix -Version "$version.0" -Publisher $publisher
 
       - name: Keep the unsigned MSIX for inspection
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

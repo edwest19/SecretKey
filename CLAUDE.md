@@ -63,6 +63,7 @@ The purpose of the project is to build a real app with AI-generated code. AI ass
 | `.github/workflows/build.yml` | CI on every pull request: tests, Windows build, unsigned MSIX packaging |
 | `.github/workflows/release.yml` | Release on a `v*` tag: check, test, package, sign (after approval), publish |
 | `Directory.Build.props` | The version, shared by all projects |
+| `scripts/Test-Msix.ps1` | Checks a packaged MSIX: identity, self-contained, permissions (used by both workflows) |
 | `CHANGELOG.md` | Release notes; the release workflow requires an entry for the version |
 
 ## Build and test
